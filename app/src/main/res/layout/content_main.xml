@@ -20,7 +20,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
-    <fragment android:name="com.aetoslabs.quickfacts.ItemFragment"
+    <fragment android:name="com.aetoslabs.quickfacts.SearchResultsFragment"
         android:id="@+id/search_result_item_fragment"
         android:layout_weight="1"
         android:layout_below="@id/searchView"

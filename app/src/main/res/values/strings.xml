@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Quick Facts</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">Quick Facts</string>
 </resources>
