@@ -27,14 +27,5 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:layout="@layout/fragment_item_list" />
-    <!--<LinearLayout-->
-        <!--android:layout_below="@id/searchView"-->
-        <!--android:orientation="vertical"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_alignParentLeft="true"-->
-        <!--android:id="@+id/linearLayout"-->
-        <!--android:background="#84ffff"></LinearLayout>-->
-
 
 </RelativeLayout>

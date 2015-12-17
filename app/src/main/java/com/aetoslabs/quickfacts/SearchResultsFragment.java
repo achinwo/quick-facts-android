@@ -1,7 +1,6 @@
 package com.aetoslabs.quickfacts;
 
 import android.content.Context;
-import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.ListViewCompat;
@@ -10,7 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -26,8 +24,6 @@ public class SearchResultsFragment extends Fragment {
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
-    // TODO: Customize parameters
-    private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
     private static final String TAG = Fragment.class.getSimpleName();
 
@@ -38,23 +34,12 @@ public class SearchResultsFragment extends Fragment {
     public SearchResultsFragment() {
     }
 
-    // TODO: Customize parameter initialization
-    @SuppressWarnings("unused")
     public static SearchResultsFragment newInstance(int columnCount) {
         SearchResultsFragment fragment = new SearchResultsFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_COLUMN_COUNT, columnCount);
         fragment.setArguments(args);
         return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        if (getArguments() != null) {
-            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
-        }
     }
 
     @Override
@@ -66,8 +51,8 @@ public class SearchResultsFragment extends Fragment {
         if (view instanceof ListViewCompat) {
             Context context = view.getContext();
             ListView listView = (ListView) view;
-            ArrayList<SearchResult> results = new ArrayList<SearchResult>();
-            results.add(new SearchResult("No search results...", "-1"));
+            ArrayList<Fact> results = new ArrayList<Fact>();
+            results.add(new Fact("No search results...", "-1"));
             SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
             listView.setAdapter(adapter);
 
@@ -93,31 +78,21 @@ public class SearchResultsFragment extends Fragment {
         mListener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
         void onListFragmentInteraction(Object item);
     }
 
-    public class SearchResultsAdapter extends ArrayAdapter<SearchResult> {
+    public class SearchResultsAdapter extends ArrayAdapter<Fact> {
 
-            public SearchResultsAdapter(Context context, ArrayList<SearchResult> results) {
+            public SearchResultsAdapter(Context context, ArrayList<Fact> results) {
                 super(context, 0, results);
             }
 
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 // Get the data item for this position
-                SearchResult result = getItem(position);
+                Fact result = getItem(position);
                 // Check if an existing view is being reused, otherwise inflate the view
                 if (convertView == null) {
                     convertView = LayoutInflater.from(getContext()).inflate(R.layout.search_result, parent, false);
@@ -129,10 +104,5 @@ public class SearchResultsFragment extends Fragment {
                 // Return the completed view to render on screen
                 return convertView;
             }
-
-        @Override
-        public void add(SearchResult object) {
-            super.add(object);
-        }
     }
 }
