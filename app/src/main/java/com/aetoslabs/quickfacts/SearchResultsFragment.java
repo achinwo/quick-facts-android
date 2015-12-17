@@ -67,7 +67,7 @@ public class SearchResultsFragment extends Fragment {
             Context context = view.getContext();
             ListView listView = (ListView) view;
             ArrayList<SearchResult> results = new ArrayList<SearchResult>();
-            results.add(new SearchResult("No search results...", "1"));
+            results.add(new SearchResult("No search results...", "-1"));
             SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
             listView.setAdapter(adapter);
 
@@ -129,5 +129,10 @@ public class SearchResultsFragment extends Fragment {
                 // Return the completed view to render on screen
                 return convertView;
             }
+
+        @Override
+        public void add(SearchResult object) {
+            super.add(object);
         }
+    }
 }

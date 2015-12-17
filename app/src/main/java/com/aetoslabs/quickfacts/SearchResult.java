@@ -12,4 +12,9 @@ public class SearchResult {
         this.id = id;
     }
 
+    public SearchResult(String content){
+        this.content = content;
+        this.id = null;
+    }
+
 }

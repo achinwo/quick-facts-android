@@ -3,16 +3,24 @@ package com.aetoslabs.quickfacts;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SearchView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,11 +42,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements SearchResultsFragment.OnListFragmentInteractionListener, SearchView.OnQueryTextListener {
+public class MainActivity extends AppCompatActivity
+        implements SearchResultsFragment.OnListFragmentInteractionListener,
+                   AddFactFragment.OnFragmentInteractionListener,
+                    AddFactFragment.EditNameDialogListener,
+                   SearchView.OnQueryTextListener {
+    public static final String TAG = AddFactFragment.class.getSimpleName();
+    public static final String SERVER_URL = "https://quick-facts.herokuapp.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -47,29 +62,35 @@ public class MainActivity extends AppCompatActivity implements SearchResultsFrag
         searchView.setOnQueryTextListener(this);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+
+                AddFactFragment testDialog = new AddFactFragment();
+                testDialog.setRetainInstance(true);
+                testDialog.show(getSupportFragmentManager(), "fragment_name");
             }
         });
     }
 
     @Override
     public void onListFragmentInteraction(Object item) {
-
+        Log.d("Fragg", "hello frag");
     }
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        Log.d("Main", "Submitted: "+query);
+        Log.d("Main", "Submitted: " + query);
         URL requestUrl = null;
 
         try {
             requestUrl = new URL("https://quick-facts.herokuapp.com/facts.json?q=" + query);
         } catch (MalformedURLException e) {
             e.printStackTrace();
+        }finally {
+            findViewById(R.id.searchView).clearFocus();
+            Log.d(TAG, "cleared search focus");
         }
 
         new ResultDownloader(this).execute(requestUrl);
@@ -78,8 +99,65 @@ public class MainActivity extends AppCompatActivity implements SearchResultsFrag
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        Log.d("Main", "Query changed: "+newText);
+        Log.d("Main", "Query changed: " + newText);
         return false;
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+        Log.d("Main", "Fragment: "+uri.toString());
+    }
+
+
+    public void onFinishEditDialog(String txt){
+        Log.d(TAG, "Finished: " + txt);
+
+        if (txt.trim().isEmpty()) return;
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url = SERVER_URL+"/facts.json";
+
+        JsonObjectRequest jsonRequest = null;
+        try {
+            JSONObject jsonBody = new JSONObject("{\"fact\":{\"content\":\""+txt+"\"}}");
+
+             jsonRequest = new JsonObjectRequest(url, jsonBody,
+                    new Response.Listener<JSONObject>(){
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            // Display the first 500 characters of the response string.
+                            ListView view = (ListView) findViewById(R.id.search_result_item_fragment);
+                            SearchResultsFragment.SearchResultsAdapter adapter = (SearchResultsFragment.SearchResultsAdapter) view.getAdapter();
+
+                            if (adapter.getCount() == 1 && adapter.getItem(0).id.equals("-1")){
+                                adapter.clear();
+                            }
+
+                            try {
+                                adapter.insert(new SearchResult(response.getString("content"), response.getString("id")), 0);
+                            }catch (JSONException js){
+                                adapter.insert(new SearchResult("An error occured" + js, ""), 0);
+                            }
+                            view.smoothScrollToPosition(0);
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            ListView view = (ListView) findViewById(R.id.search_result_item_fragment);
+                            SearchResultsFragment.SearchResultsAdapter adapter = (SearchResultsFragment.SearchResultsAdapter) view.getAdapter();
+                            adapter.clear();
+                            adapter.add(new SearchResult("That thing no work o" + error, "eh?"));
+                        }
+                    }
+            );
+
+        }catch(JSONException e){
+            Log.e(TAG, "The thing fail o" + e.toString());
+        }
+
+// Add the request to the RequestQueue.
+        queue.add(jsonRequest);
     }
 
     public class ResultDownloader extends AsyncTask<URL, Void, Void> {
@@ -95,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements SearchResultsFrag
         }
 
         protected void onPreExecute() {
-            progressDialog.setMessage("Downloading your data...");
+            progressDialog.setMessage("Searching facts...");
             progressDialog.show();
             progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                 public void onCancel(DialogInterface arg0) {
