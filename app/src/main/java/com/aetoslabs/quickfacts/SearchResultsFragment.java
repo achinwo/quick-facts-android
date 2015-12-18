@@ -51,8 +51,8 @@ public class SearchResultsFragment extends Fragment {
         if (view instanceof ListViewCompat) {
             Context context = view.getContext();
             ListView listView = (ListView) view;
-            ArrayList<Fact> results = new ArrayList<Fact>();
-            results.add(new Fact("No search results...", "-1"));
+            ArrayList<Fact> results = new ArrayList<>();
+            results.add(new Fact("No search results...", -1));
             SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
             listView.setAdapter(adapter);
 

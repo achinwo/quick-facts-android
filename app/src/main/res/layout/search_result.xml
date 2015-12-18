@@ -2,18 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="#fff"
     android:orientation="horizontal">
 
-    <EditText
+    <TextView
         android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textIsSelectable="true"
+        android:textAlignment="textStart"
+        android:gravity="start"
         android:focusable="true"
+        android:longClickable="true"
         android:focusableInTouchMode="true"
         android:editable="false"
         android:layout_margin="@dimen/text_margin"
-        android:background="#fff"
         android:textAppearance="?attr/textAppearanceListItem" />
-
 </LinearLayout>

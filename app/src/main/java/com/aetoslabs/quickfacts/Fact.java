@@ -1,5 +1,7 @@
 package com.aetoslabs.quickfacts;
 
+import android.support.annotation.Nullable;
+
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -8,7 +10,9 @@ import com.google.gson.annotations.SerializedName;
 public class Fact {
 
     protected String content;
-    protected String id;
+
+    @SerializedName("user_id")
+    protected Integer userId;
 
     @SerializedName("created_at")
     protected String createdAt;
@@ -16,14 +20,14 @@ public class Fact {
     @SerializedName("updated_at")
     protected String updatedAt;
 
-    public Fact(String content, String id){
+    public Fact(String content, @Nullable Integer userId) {
         this.content = content;
-        this.id = id;
+        this.userId = userId;
     }
 
     public Fact(String content){
         this.content = content;
-        this.id = null;
+        this.userId = null;
     }
 
 }

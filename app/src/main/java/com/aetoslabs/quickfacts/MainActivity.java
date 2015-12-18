@@ -1,8 +1,10 @@
 package com.aetoslabs.quickfacts;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,6 +17,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.Toast;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -24,6 +28,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,7 +41,12 @@ public class MainActivity extends AppCompatActivity
                    SearchView.OnQueryTextListener {
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final String SERVER_URL = "https://quick-facts.herokuapp.com";
+    public static final String APP_PREFERENCES = "QuickFactPrefs";
+    public static final String PARAM_USER_NAME = "USER_NAME";
+    public static final String PARAM_USER_EMAIL = "USER_EMAIL";
+    public static final String PARAM_USER_ID = "USER_ID";
     private ProgressDialog progressDialog;
+    SharedPreferences prefs;
 
     protected RequestQueue queue;
 
@@ -45,6 +55,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         progressDialog = new ProgressDialog(this);
         queue = Volley.newRequestQueue(this);
+        prefs = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -71,10 +82,30 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (!prefs.getAll().isEmpty()) {
+            menu.findItem(R.id.menu_login).setVisible(false);
+            menu.findItem(R.id.menu_logout).setVisible(true);
+            //menu.findItem(R.id.menu_preferences).setVisible(true);
+        }
+        return true;
+    }
+
     public void login(MenuItem loginButton){
         Log.d(TAG, "Login " + loginButton);
         Intent intent = new Intent(this, LoginActivity.class);
         startActivity(intent);
+    }
+
+    public void logout(MenuItem logoutButton) {
+        Log.d(TAG, "Logout " + logoutButton);
+        SharedPreferences.Editor editor = prefs.edit();
+        String userName = prefs.getString(PARAM_USER_NAME, "");
+        editor.clear();
+        editor.commit();
+        invalidateOptionsMenu();
+        Toast.makeText(this, "Logged out " + userName, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -90,7 +121,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onFragmentInteraction(Uri uri) {
-        Log.d("Main", "Fragment: "+uri.toString());
+        Log.d("Main", "Fragment: " + uri.toString());
     }
 
     @Override
@@ -103,7 +134,7 @@ public class MainActivity extends AppCompatActivity
     public void onFinishEditDialog(String txt){
         Log.d(TAG, "Finished: " + txt);
         if (txt.trim().isEmpty()) return;
-        addFact(new Fact(txt));
+        addFact(new Fact(txt, prefs.contains(PARAM_USER_ID) ? prefs.getInt(PARAM_USER_ID, 0) : null));
     }
 
     public SearchResultsFragment.SearchResultsAdapter getSearchResultsAdapter(){
@@ -124,7 +155,7 @@ public class MainActivity extends AppCompatActivity
                     public void onResponse(JSONObject response) {
                         SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
 
-                        if (adapter.getCount() == 1 && adapter.getItem(0).id.equals("-1")){
+                        if (adapter.getCount() == 1 && adapter.getItem(0).userId == -1) {
                             adapter.clear();
                         }
                         adapter.insert(gson.fromJson(response.toString(), Fact.class), 0);
@@ -136,7 +167,7 @@ public class MainActivity extends AppCompatActivity
                     public void onErrorResponse(VolleyError error) {
                         SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
                         adapter.clear();
-                        adapter.add(new Fact("Error adding fact" + error, "eh?"));
+                        adapter.add(new Fact("Error adding fact" + error));
                     }
                 }
         );
@@ -162,7 +193,7 @@ public class MainActivity extends AppCompatActivity
                     public void onErrorResponse(VolleyError error) {
                         SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
                         adapter.clear();
-                        adapter.add(new Fact("That thing no work o" + error, "eh?"));
+                        adapter.add(new Fact("That thing no work o" + error));
                         MainActivity.this.progressDialog.dismiss();
                     }
                 }

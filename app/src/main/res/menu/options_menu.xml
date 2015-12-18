@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item android:id="@+id/new_game"
+    <item
+        android:id="@+id/menu_login"
         android:title="Login"
         android:onClick="login"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_preferences"
+        android:title="Preferences"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_logout"
+        android:title="Logout"
+        android:onClick="logout"
+        android:visible="false"
         app:showAsAction="never"/>
 </menu>

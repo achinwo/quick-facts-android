@@ -3,22 +3,23 @@ package com.aetoslabs.quickfacts;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
-
+import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
-
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,9 +29,22 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.RequestFuture;
+import com.android.volley.toolbox.Volley;
+import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -43,14 +57,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * Id to identity READ_CONTACTS permission request.
      */
     private static final int REQUEST_READ_CONTACTS = 0;
+    public static final String TAG = LoginActivity.class.getSimpleName();
 
-    /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
-    private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world"
-    };
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -317,25 +325,38 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
+            int REQUEST_TIMEOUT = 10;
+            RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
+            RequestFuture<JSONObject> future = RequestFuture.newFuture();
 
+            String url = MainActivity.SERVER_URL + "/authenticate.json";
+
+            boolean authenticated = false;
             try {
-                // Simulate network access.
-                Thread.sleep(2000);
+                JSONObject cred = new JSONObject("{\"email\":\"" + mEmail + "\", \"password\":\"" + mPassword + "\"}");
+                JsonObjectRequest request = new JsonObjectRequest(url, cred, future, future);
+                requestQueue.add(request);
+                JSONObject response = future.get(REQUEST_TIMEOUT, TimeUnit.SECONDS); // this will block (forever)
+                User user = new Gson().fromJson(response.toString(), User.class);
+
+                SharedPreferences.Editor editor = getSharedPreferences(MainActivity.APP_PREFERENCES, Context.MODE_PRIVATE).edit();
+                editor.putString(MainActivity.PARAM_USER_NAME, user.name);
+                editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
+                editor.putInt(MainActivity.PARAM_USER_ID, user.id);
+                editor.commit();
+
+                Log.d(TAG, "Credentials: " + user.name + "  " + user.email);
+                authenticated = true;
             } catch (InterruptedException e) {
-                return false;
+                Log.e(TAG, "thing was interrupted " + e);
+            } catch (ExecutionException e) {
+                Log.e(TAG, "thing errored " + e);
+            } catch (TimeoutException e) {
+                Log.e(TAG, "thing timed out " + e);
+            } catch (JSONException e) {
+                Log.e(TAG, "Json issue " + e);
             }
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
-            return true;
+            return authenticated;
         }
 
         @Override
@@ -344,6 +365,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             showProgress(false);
 
             if (success) {
+                Toast.makeText(LoginActivity.this, "Log in successful", Toast.LENGTH_SHORT).show();
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
