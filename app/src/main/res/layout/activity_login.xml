@@ -72,6 +72,18 @@
                 android:text="@string/action_sign_in_short"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/link_to_register"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dip"
+                android:layout_marginBottom="40dip"
+                android:onClick="register"
+                android:text="New to Quick Facts? Register here"
+                android:gravity="center"
+                android:textSize="20dip"
+                android:textColor="#0b84aa" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

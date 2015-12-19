@@ -33,6 +33,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.aetoslabs.quickfacts.MainActivity" />
         </activity>
+        <activity
+            android:name=".RegisterationActivity"
+            android:label="@string/title_activity_register"
+            android:parentActivityName=".LoginActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".LoginActivity" />
+        </activity>
     </application>
 
 </manifest>

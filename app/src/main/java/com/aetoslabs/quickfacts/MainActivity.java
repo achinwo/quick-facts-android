@@ -210,4 +210,7 @@ public class MainActivity extends AppCompatActivity
         queue.add(jsonRequest);
     }
 
+    public static void main(String[] args) {
+        System.out.println("Hello world...");
+    }
 }

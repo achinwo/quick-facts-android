@@ -6,6 +6,7 @@ import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -155,6 +156,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // Show the Up button in the action bar.
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+    }
+
+    public void register(View registerButton) {
+        Intent registerActivity = new Intent(this, RegisterationActivity.class);
+        startActivity(registerActivity);
     }
 
     /**

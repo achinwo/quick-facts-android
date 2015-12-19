@@ -2,7 +2,12 @@ package com.aetoslabs.quickfacts;
 
 import android.support.annotation.Nullable;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
  * Created by anthony on 13/12/15.
@@ -28,6 +33,13 @@ public class Fact {
     public Fact(String content){
         this.content = content;
         this.userId = null;
+    }
+
+    public static void main(String[] args) {
+        Type type = new TypeToken<Map<String, String>>(){}.getType();
+        Gson gson = new Gson();
+        Map<String, String> myMap = gson.fromJson("{'k1':1,'k2':'orange'}", type);
+        System.out.println(myMap);
     }
 
 }
