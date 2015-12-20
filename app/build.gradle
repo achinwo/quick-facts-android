@@ -8,13 +8,33 @@ android {
         applicationId "com.aetoslabs.quickfacts"
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 3
-        versionName "1.02"
+        versionCode 4
+        versionName "1.03"
+        buildConfigField "String", "SERVER_URL", '"https://quick-facts.herokuapp.com"'
     }
+
+    signingConfigs {
+
+        release {
+            storeFile file("../../keystores/quick_facts.jks")
+            storePassword System.getenv("KSTOREPWD")
+            keyAlias "quick_facts"
+            keyPassword System.getenv("KEYPWD")
+        }
+    }
+
     buildTypes {
         release {
+            debuggable true
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            buildConfigField "String", "SERVER_URL", '"https://quick-facts.herokuapp.com"'
+            //buildConfigField "String", "SERVER_URL", '"http://192.168.1.6:3000"'
         }
     }
 }
@@ -26,5 +46,4 @@ dependencies {
     compile 'com.google.code.gson:gson:2.4'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
-    compile 'com.android.support:support-v4:23.1.1'
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <CheckBoxPreference
+        android:key="pref_include_anon_facts"
+        android:summary="Search includes facts entered by anonymous users"
+        android:title="Include Anonymous Facts"
+        android:defaultValue="false" />
+
+</PreferenceScreen>

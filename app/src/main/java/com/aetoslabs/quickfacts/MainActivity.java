@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -40,13 +42,16 @@ public class MainActivity extends AppCompatActivity
                     AddFactFragment.EditNameDialogListener,
                    SearchView.OnQueryTextListener {
     public static final String TAG = MainActivity.class.getSimpleName();
-    public static final String SERVER_URL = "https://quick-facts.herokuapp.com";
-    public static final String APP_PREFERENCES = "QuickFactPrefs";
+    public static final String APP_SESSION = "QuickFactSession";
+    //public static final String APP_PREFERENCES = "QuickFactPrefs";
     public static final String PARAM_USER_NAME = "USER_NAME";
     public static final String PARAM_USER_EMAIL = "USER_EMAIL";
     public static final String PARAM_USER_ID = "USER_ID";
+    public static final String PARAM_USER = "USER_OBJ";
+
     private ProgressDialog progressDialog;
-    SharedPreferences prefs;
+
+    SharedPreferences session, prefs;
 
     protected RequestQueue queue;
 
@@ -55,7 +60,8 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         progressDialog = new ProgressDialog(this);
         queue = Volley.newRequestQueue(this);
-        prefs = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        session = getSharedPreferences(APP_SESSION, Context.MODE_PRIVATE);
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -69,10 +75,34 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 AddFactFragment testDialog = new AddFactFragment();
-                testDialog.setRetainInstance(true);
                 testDialog.show(getSupportFragmentManager(), "fragment_name");
             }
         });
+        Log.d(TAG, "On create..." + savedInstanceState);
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null && extras.getSerializable(PARAM_USER) != null) {
+            User user = (User) extras.getSerializable(PARAM_USER);
+            Log.d(TAG, "Extra " + user);
+            SharedPreferences.Editor editor = session.edit();
+            editor.putString(MainActivity.PARAM_USER_NAME, user.name);
+            editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
+            editor.putInt(MainActivity.PARAM_USER_ID, user.id);
+            editor.commit();
+            Toast.makeText(this, "Logged in " + user.name, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "resumed...");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "paused...");
     }
 
     @Override
@@ -84,28 +114,47 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (!prefs.getAll().isEmpty()) {
+        if (session.contains(PARAM_USER_ID)) {
             menu.findItem(R.id.menu_login).setVisible(false);
+            menu.findItem(R.id.menu_create_account).setVisible(false);
+
             menu.findItem(R.id.menu_logout).setVisible(true);
-            //menu.findItem(R.id.menu_preferences).setVisible(true);
+            menu.findItem(R.id.menu_preferences).setVisible(true);
         }
+
         return true;
     }
 
-    public void login(MenuItem loginButton){
-        Log.d(TAG, "Login " + loginButton);
-        Intent intent = new Intent(this, LoginActivity.class);
-        startActivity(intent);
-    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
 
-    public void logout(MenuItem logoutButton) {
-        Log.d(TAG, "Logout " + logoutButton);
-        SharedPreferences.Editor editor = prefs.edit();
-        String userName = prefs.getString(PARAM_USER_NAME, "");
-        editor.clear();
-        editor.commit();
-        invalidateOptionsMenu();
-        Toast.makeText(this, "Logged out " + userName, Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Menu clicked " + item);
+        switch (item.getItemId()) {
+            case R.id.menu_login:
+                Intent intent = new Intent(this, LoginActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.menu_logout:
+                SharedPreferences.Editor editor = session.edit();
+                String userName = session.getString(PARAM_USER_NAME, "");
+                editor.clear();
+                editor.commit();
+                invalidateOptionsMenu();
+                Toast.makeText(this, "Logged out " + userName, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.menu_create_account:
+                Intent registerActivity = new Intent(this, RegistrationActivity.class);
+                startActivity(registerActivity);
+                break;
+            case R.id.menu_preferences:
+                Log.d(TAG, "launch session activity here");
+                Intent settingsActivity = new Intent(this, SettingsActivity.class);
+                startActivity(settingsActivity);
+                break;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+        return true;
     }
 
     @Override
@@ -134,7 +183,7 @@ public class MainActivity extends AppCompatActivity
     public void onFinishEditDialog(String txt){
         Log.d(TAG, "Finished: " + txt);
         if (txt.trim().isEmpty()) return;
-        addFact(new Fact(txt, prefs.contains(PARAM_USER_ID) ? prefs.getInt(PARAM_USER_ID, 0) : null));
+        addFact(new Fact(txt, session.contains(PARAM_USER_ID) ? session.getInt(PARAM_USER_ID, 0) : null));
     }
 
     public SearchResultsFragment.SearchResultsAdapter getSearchResultsAdapter(){
@@ -147,7 +196,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void addFact(Fact fact){
-        String url = SERVER_URL+"/facts.json";
+        String url = BuildConfig.SERVER_URL + "/facts.json";
         final Gson gson = new Gson();
         JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, gson.toJson(fact),
                 new Response.Listener<JSONObject>(){
@@ -165,9 +214,10 @@ public class MainActivity extends AppCompatActivity
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
-                        adapter.clear();
-                        adapter.add(new Fact("Error adding fact" + error));
+                        Toast.makeText(MainActivity.this,
+                                (error instanceof TimeoutError) ? "Server timedout, please try again momentarily"
+                                        : "Error: " + error.toString(),
+                                Toast.LENGTH_LONG).show();
                     }
                 }
         );
@@ -175,7 +225,14 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void search(String query){
-        String url = SERVER_URL+"/facts.json?query="+query;
+        String url = BuildConfig.SERVER_URL + "/facts.json?query=" + query;
+
+        if (session.contains(PARAM_USER_ID)) {
+            url += "&user_id=" + session.getInt(PARAM_USER_ID, -1);
+            url += "&include_anon=" + prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
+        }
+
+        Log.d(TAG, "URL=" + url);
         final JsonArrayRequest jsonRequest = new JsonArrayRequest(Request.Method.GET, url,
                 new Response.Listener<JSONArray>(){
                     @Override
@@ -191,9 +248,10 @@ public class MainActivity extends AppCompatActivity
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
-                        adapter.clear();
-                        adapter.add(new Fact("That thing no work o" + error));
+                        Toast.makeText(MainActivity.this,
+                                (error instanceof TimeoutError) ? "Server timedout, please try again momentarily"
+                                        : "Error: " + error.toString(),
+                                Toast.LENGTH_LONG).show();
                         MainActivity.this.progressDialog.dismiss();
                     }
                 }

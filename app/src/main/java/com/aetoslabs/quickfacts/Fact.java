@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -36,10 +37,15 @@ public class Fact {
     }
 
     public static void main(String[] args) {
-        Type type = new TypeToken<Map<String, String>>(){}.getType();
         Gson gson = new Gson();
-        Map<String, String> myMap = gson.fromJson("{'k1':1,'k2':'orange'}", type);
-        System.out.println(myMap);
+        Type type = new TypeToken<Map<String, Map<String, String[]>>>(){}.getType();
+        Map<String, Map<String, String[]>> myMap = gson.fromJson("{\"errors\":{\"email\":[\"is invalid\"]}}", type);
+        System.out.println(myMap.get("errors"));
+
+        Map<String, String[]> empty = new HashMap<String, String[]>();
+        String[] emailErrors = myMap.get("errors").get("email");
+        String[] passwordErrors = myMap.get("errors").get("password");
+        System.out.println("Email: "+emailErrors[0]+" Pass:"+passwordErrors);
     }
 
 }

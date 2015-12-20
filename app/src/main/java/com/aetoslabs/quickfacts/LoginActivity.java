@@ -159,7 +159,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     }
 
     public void register(View registerButton) {
-        Intent registerActivity = new Intent(this, RegisterationActivity.class);
+        Intent registerActivity = new Intent(this, RegistrationActivity.class);
         startActivity(registerActivity);
     }
 
@@ -335,7 +335,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
 
-            String url = MainActivity.SERVER_URL + "/authenticate.json";
+            String url = BuildConfig.SERVER_URL + "/authenticate.json";
 
             boolean authenticated = false;
             try {
@@ -345,20 +345,22 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 JSONObject response = future.get(REQUEST_TIMEOUT, TimeUnit.SECONDS); // this will block (forever)
                 User user = new Gson().fromJson(response.toString(), User.class);
 
-                SharedPreferences.Editor editor = getSharedPreferences(MainActivity.APP_PREFERENCES, Context.MODE_PRIVATE).edit();
-                editor.putString(MainActivity.PARAM_USER_NAME, user.name);
-                editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
-                editor.putInt(MainActivity.PARAM_USER_ID, user.id);
-                editor.commit();
+                if (user.id != null) {
+                    SharedPreferences.Editor editor = getSharedPreferences(MainActivity.APP_SESSION, Context.MODE_PRIVATE).edit();
+                    editor.putString(MainActivity.PARAM_USER_NAME, user.name);
+                    editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
+                    editor.putInt(MainActivity.PARAM_USER_ID, user.id);
+                    editor.apply();
 
-                Log.d(TAG, "Credentials: " + user.name + "  " + user.email);
-                authenticated = true;
+                    Log.d(TAG, "Credentials: " + user.name + "  " + user.email);
+                    authenticated = true;
+                }
             } catch (InterruptedException e) {
                 Log.e(TAG, "thing was interrupted " + e);
             } catch (ExecutionException e) {
                 Log.e(TAG, "thing errored " + e);
             } catch (TimeoutException e) {
-                Log.e(TAG, "thing timed out " + e);
+                Toast.makeText(LoginActivity.this, "Server timedout, please try again momentarily", Toast.LENGTH_LONG).show();
             } catch (JSONException e) {
                 Log.e(TAG, "Json issue " + e);
             }
