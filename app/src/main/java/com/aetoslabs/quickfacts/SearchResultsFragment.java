@@ -1,6 +1,7 @@
 package com.aetoslabs.quickfacts;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.ListViewCompat;
@@ -8,11 +9,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * A fragment representing a list of Items.
@@ -22,31 +26,23 @@ import java.util.ArrayList;
  */
 public class SearchResultsFragment extends Fragment {
 
-    // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     private OnListFragmentInteractionListener mListener;
     private static final String TAG = Fragment.class.getSimpleName();
+    SharedPreferences session;
 
-    /**
-     * Mandatory empty constructor for the fragment manager to instantiate the
-     * fragment (e.g. upon screen orientation changes).
-     */
-    public SearchResultsFragment() {
-    }
-
-    public static SearchResultsFragment newInstance(int columnCount) {
-        SearchResultsFragment fragment = new SearchResultsFragment();
-        Bundle args = new Bundle();
-        args.putInt(ARG_COLUMN_COUNT, columnCount);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private AdapterView.OnItemClickListener mMessageClickedHandler = new AdapterView.OnItemClickListener() {
+        public void onItemClick(AdapterView parent, View v, int position, long id) {
+            Log.d(TAG, "Clicked parent=" + parent + " view=" + v + " pos=" + position + " id=" + id);
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item_list, container, false);
         Log.d(TAG, "onCreate() " + view.getClass().getName());
+        session = getActivity().getSharedPreferences(MainActivity.APP_SESSION, Context.MODE_PRIVATE);
         // Set the adapter
         if (view instanceof ListViewCompat) {
             Context context = view.getContext();
@@ -56,6 +52,8 @@ public class SearchResultsFragment extends Fragment {
             SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
             listView.setAdapter(adapter);
 
+
+            listView.setOnItemClickListener(mMessageClickedHandler);
         }
         return view;
     }
@@ -97,11 +95,17 @@ public class SearchResultsFragment extends Fragment {
                 if (convertView == null) {
                     convertView = LayoutInflater.from(getContext()).inflate(R.layout.search_result, parent, false);
                 }
-                // Lookup view for data population
-                TextView tvName = (TextView) convertView.findViewById(R.id.content);
-                // Populate the data into the template view using the data object
-                tvName.setText(result.content);
-                // Return the completed view to render on screen
+                ((TextView) convertView.findViewById(R.id.content)).setText(result.content);
+
+                if (result.userId != null && result.userId > 0) {
+                    String userName = session.getInt(MainActivity.PARAM_USER_ID, -1) == result.userId ? "mine" : result.userId.toString();
+                    ((TextView) convertView.findViewById(R.id.result_user_name)).setText(userName);
+                }
+
+                Date updatedAt = Utils.parseDate(result.updatedAt);
+                ((TextView) convertView.findViewById(R.id.result_updated_at)).setText(
+                        updatedAt == null ? "" : DateFormat.getDateInstance().format(updatedAt));
+
                 return convertView;
             }
     }

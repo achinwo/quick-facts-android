@@ -25,13 +25,10 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -90,6 +87,10 @@ public class MainActivity extends AppCompatActivity
             editor.putInt(MainActivity.PARAM_USER_ID, user.id);
             editor.commit();
             Toast.makeText(this, "Logged in " + user.name, Toast.LENGTH_SHORT).show();
+        }
+
+        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+            search("a");
         }
     }
 
@@ -233,15 +234,14 @@ public class MainActivity extends AppCompatActivity
         }
 
         Log.d(TAG, "URL=" + url);
-        final JsonArrayRequest jsonRequest = new JsonArrayRequest(Request.Method.GET, url,
-                new Response.Listener<JSONArray>(){
+        final JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.GET, url,
+                new Response.Listener<JSONObject>() {
                     @Override
-                    public void onResponse(JSONArray response) {
+                    public void onResponse(JSONObject response) {
                         SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
                         adapter.clear();
-                        Gson gson = new Gson();
-                        ArrayList<Fact> facts = gson.fromJson(response.toString(), (new TypeToken<ArrayList<Fact>>() {}).getType());
-                        adapter.addAll(facts);
+                        SearchResult searchResult = new Gson().fromJson(response.toString(), SearchResult.class);
+                        adapter.addAll(searchResult.facts);
                         MainActivity.this.progressDialog.dismiss();
                     }
                 },
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity
                     public void onErrorResponse(VolleyError error) {
                         Toast.makeText(MainActivity.this,
                                 (error instanceof TimeoutError) ? "Server timedout, please try again momentarily"
-                                        : "Error: " + error.toString(),
+                                        : "Error: " + error.toString().substring(0, 100),
                                 Toast.LENGTH_LONG).show();
                         MainActivity.this.progressDialog.dismiss();
                     }
@@ -266,6 +266,11 @@ public class MainActivity extends AppCompatActivity
             }
         });
         queue.add(jsonRequest);
+    }
+
+    public class SearchResult {
+        protected ArrayList<Fact> facts;
+        protected ArrayList<User> users;
     }
 
     public static void main(String[] args) {

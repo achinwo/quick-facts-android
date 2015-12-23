@@ -6,12 +6,11 @@
     android:name="com.aetoslabs.quickfacts.ItemFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginTop="8dp"
     android:layout_marginLeft="8dp"
     android:layout_marginRight="8dp"
     android:divider="@android:color/transparent"
-    android:dividerHeight="8.0sp"
     android:focusable="true"
-    android:focusableInTouchMode="true"
     app:layoutManager="LinearLayoutManager"
     tools:context=".SearchResultsFragment"
     tools:listitem="@layout/search_result" />

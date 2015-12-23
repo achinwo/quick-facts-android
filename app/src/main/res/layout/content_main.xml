@@ -24,6 +24,7 @@
     <fragment android:name="com.aetoslabs.quickfacts.SearchResultsFragment"
         android:id="@+id/search_result_item_fragment"
         android:layout_weight="1"
+        android:layout_marginTop="8dp"
         android:layout_below="@id/searchView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

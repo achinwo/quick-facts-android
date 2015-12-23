@@ -2,13 +2,10 @@ package com.aetoslabs.quickfacts;
 
 import android.support.annotation.Nullable;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by anthony on 13/12/15.
@@ -18,7 +15,9 @@ public class Fact {
     protected String content;
 
     @SerializedName("user_id")
-    protected Integer userId;
+    protected
+    @Nullable
+    Integer userId;
 
     @SerializedName("created_at")
     protected String createdAt;
@@ -29,6 +28,7 @@ public class Fact {
     public Fact(String content, @Nullable Integer userId) {
         this.content = content;
         this.userId = userId;
+        updatedAt = "";
     }
 
     public Fact(String content){
@@ -37,15 +37,15 @@ public class Fact {
     }
 
     public static void main(String[] args) {
-        Gson gson = new Gson();
-        Type type = new TypeToken<Map<String, Map<String, String[]>>>(){}.getType();
-        Map<String, Map<String, String[]>> myMap = gson.fromJson("{\"errors\":{\"email\":[\"is invalid\"]}}", type);
-        System.out.println(myMap.get("errors"));
-
-        Map<String, String[]> empty = new HashMap<String, String[]>();
-        String[] emailErrors = myMap.get("errors").get("email");
-        String[] passwordErrors = myMap.get("errors").get("password");
-        System.out.println("Email: "+emailErrors[0]+" Pass:"+passwordErrors);
+        String fmt = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+        String dtStart = "2015-12-17T16:35:22.417Z";
+        SimpleDateFormat format = new SimpleDateFormat(fmt);
+        try {
+            Date date = format.parse(dtStart);
+            System.out.println("Date ->" + date);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

@@ -51,9 +51,11 @@ public class RegistrationActivity extends AppCompatActivity {
         mLoginFormView = findViewById(R.id.register_form);
         mProgressView = findViewById(R.id.register_progress);
 
-        mNameView.setText("Tester1");
-        mEmailView.setText("tester@tested1.com");
-        mPasswordView.setText("testing");
+        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+            mNameView.setText("Tester1");
+            mEmailView.setText("tester@tested1.com");
+            mPasswordView.setText("testing");
+        }
     }
 
     public void createAccount(View button) {
