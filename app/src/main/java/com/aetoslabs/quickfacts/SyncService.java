@@ -2,10 +2,14 @@ package com.aetoslabs.quickfacts;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import org.json.JSONObject;
+
+import java.util.HashMap;
 import java.util.Random;
 
 public class SyncService extends Service {
@@ -25,6 +29,11 @@ public class SyncService extends Service {
         return mGenerator.nextInt(100);
     }
 
+    public void syncFacts() {
+
+
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -41,6 +50,25 @@ public class SyncService extends Service {
         public SyncService getService() {
             // Return this instance of LocalService so clients can call public methods
             return SyncService.this;
+        }
+    }
+
+    protected class SyncTask extends AsyncTask<HashMap<String, String>, Void, JSONObject> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected JSONObject doInBackground(HashMap<String, String>... params) {
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject jsonObject) {
+            super.onPostExecute(jsonObject);
+
         }
     }
 }

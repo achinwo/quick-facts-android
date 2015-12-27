@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/list"
-    android:name="com.aetoslabs.quickfacts.ItemFragment"
+    android:name="com.aetoslabs.quickfacts.SearchResultsFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginTop="8dp"
@@ -13,4 +13,5 @@
     android:focusable="true"
     app:layoutManager="LinearLayoutManager"
     tools:context=".fragments.SearchResultsFragment"
+    tools:showIn="@layout/activity_main"
     tools:listitem="@layout/search_result" />

@@ -2,6 +2,7 @@ package com.aetoslabs.quickfacts.core;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -48,7 +49,7 @@ public class Fact {
         this.userId = null;
     }
 
-    public boolean write(SQLiteDatabase writableDb) {
+    public boolean write(SQLiteOpenHelper dbHelper) {
         boolean successful = true;
         Field[] allFields = Fact.class.getDeclaredFields();
         String[] exclude = exclude();
@@ -65,10 +66,12 @@ public class Fact {
                 values.put(FactOpenHelper.COLUMN_NAME_ATTR, field.getName());
                 values.put(FactOpenHelper.COLUMN_NAME_VALUE, strValue);
 
+                SQLiteDatabase writableDb = dbHelper.getWritableDatabase();
                 writableDb.insert(
                         FactOpenHelper.FACTS_TABLE_NAME,
                         FactOpenHelper.COLUMN_NAME_VALUE,
                         values);
+                writableDb.close();
             } catch (IllegalAccessException e) {
                 successful = false;
                 Log.e(TAG, "Error writing fact: " + e);

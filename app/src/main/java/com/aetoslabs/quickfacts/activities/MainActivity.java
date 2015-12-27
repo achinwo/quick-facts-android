@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -119,9 +118,8 @@ public class MainActivity extends AppCompatActivity
         }
 
         if (BuildConfig.DEBUG) {
-            //search("a");
+            search("f");
         }
-
 
     }
 
@@ -233,8 +231,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onQueryTextChange(String newText) {
         Log.d("Main", "Query changed: " + newText);
-        int num = mService.getRandomNumber();
-        Toast.makeText(this, "number: " + num, Toast.LENGTH_SHORT).show();
         return false;
     }
 
@@ -297,7 +293,6 @@ public class MainActivity extends AppCompatActivity
 
     public void search(String query){
 
-        final SQLiteDatabase db = mFactDbHelper.getWritableDatabase();
         String url = BuildConfig.SERVER_URL + "/facts.json?query=" + query;
 
         if (session.contains(PARAM_USER_ID)) {
@@ -314,9 +309,6 @@ public class MainActivity extends AppCompatActivity
                         adapter.clear();
                         SearchResult searchResult = new Gson().fromJson(response.toString(), SearchResult.class);
                         adapter.addAll(searchResult.facts);
-                        for (Fact f : searchResult.facts) {
-                            f.write(db);
-                        }
                         MainActivity.this.progressDialog.dismiss();
                     }
                 },
