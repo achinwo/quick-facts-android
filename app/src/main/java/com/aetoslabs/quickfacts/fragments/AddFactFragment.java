@@ -1,4 +1,4 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.fragments;
 
 import android.content.Context;
 import android.net.Uri;
@@ -13,6 +13,8 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import com.aetoslabs.quickfacts.R;
 
 
 /**

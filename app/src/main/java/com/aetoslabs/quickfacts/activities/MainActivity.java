@@ -1,12 +1,16 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.activities;
 
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +24,14 @@ import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
 
+import com.aetoslabs.quickfacts.BuildConfig;
+import com.aetoslabs.quickfacts.R;
+import com.aetoslabs.quickfacts.SyncService;
+import com.aetoslabs.quickfacts.core.Fact;
+import com.aetoslabs.quickfacts.core.FactOpenHelper;
+import com.aetoslabs.quickfacts.core.User;
+import com.aetoslabs.quickfacts.fragments.AddFactFragment;
+import com.aetoslabs.quickfacts.fragments.SearchResultsFragment;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -35,7 +47,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
         implements SearchResultsFragment.OnListFragmentInteractionListener,
-                   AddFactFragment.OnFragmentInteractionListener,
+        AddFactFragment.OnFragmentInteractionListener,
                     AddFactFragment.EditNameDialogListener,
                    SearchView.OnQueryTextListener {
     public static final String TAG = MainActivity.class.getSimpleName();
@@ -49,8 +61,23 @@ public class MainActivity extends AppCompatActivity
     private ProgressDialog progressDialog;
 
     SharedPreferences session, prefs;
+    SyncService mService;
+    ServiceConnection mServiceConn = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mService = ((SyncService.SyncServiceBinder) service).getService();
+            Log.d(TAG, "Service connected " + name + " " + service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            Log.d(TAG, "Service disconnected " + name);
+        }
+    };
 
     protected RequestQueue queue;
+    private FactOpenHelper mFactDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +86,8 @@ public class MainActivity extends AppCompatActivity
         queue = Volley.newRequestQueue(this);
         session = getSharedPreferences(APP_SESSION, Context.MODE_PRIVATE);
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mFactDbHelper = new FactOpenHelper(this);
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -89,9 +118,11 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(this, "Logged in " + user.name, Toast.LENGTH_SHORT).show();
         }
 
-        if (BuildConfig.BUILD_TYPE.equals("debug")) {
-            search("a");
+        if (BuildConfig.DEBUG) {
+            //search("a");
         }
+
+
     }
 
     @Override
@@ -104,6 +135,29 @@ public class MainActivity extends AppCompatActivity
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "paused...");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "activity destroyed...");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Intent intentService = new Intent(this, SyncService.class);
+        bindService(intentService, mServiceConn, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "Started, service bound...");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        unbindService(mServiceConn);
+        Log.d(TAG, "Stopped, service unbound...");
     }
 
     @Override
@@ -121,6 +175,10 @@ public class MainActivity extends AppCompatActivity
 
             menu.findItem(R.id.menu_logout).setVisible(true);
             menu.findItem(R.id.menu_preferences).setVisible(true);
+        }
+
+        if (BuildConfig.DEBUG) {
+            menu.findItem(R.id.menu_test_btn).setVisible(true);
         }
 
         return true;
@@ -152,10 +210,19 @@ public class MainActivity extends AppCompatActivity
                 Intent settingsActivity = new Intent(this, SettingsActivity.class);
                 startActivity(settingsActivity);
                 break;
+            case R.id.menu_test_btn:
+                doTest();
+                break;
             default:
                 return super.onOptionsItemSelected(item);
         }
         return true;
+    }
+
+    private void doTest() {
+        int num = mService.getRandomNumber();
+        Toast.makeText(this, "number: " + num, Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "testing testing");
     }
 
     @Override
@@ -166,6 +233,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onQueryTextChange(String newText) {
         Log.d("Main", "Query changed: " + newText);
+        int num = mService.getRandomNumber();
+        Toast.makeText(this, "number: " + num, Toast.LENGTH_SHORT).show();
         return false;
     }
 
@@ -199,6 +268,7 @@ public class MainActivity extends AppCompatActivity
     public void addFact(Fact fact){
         String url = BuildConfig.SERVER_URL + "/facts.json";
         final Gson gson = new Gson();
+
         JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, gson.toJson(fact),
                 new Response.Listener<JSONObject>(){
                     @Override
@@ -226,6 +296,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void search(String query){
+
+        final SQLiteDatabase db = mFactDbHelper.getWritableDatabase();
         String url = BuildConfig.SERVER_URL + "/facts.json?query=" + query;
 
         if (session.contains(PARAM_USER_ID)) {
@@ -242,6 +314,9 @@ public class MainActivity extends AppCompatActivity
                         adapter.clear();
                         SearchResult searchResult = new Gson().fromJson(response.toString(), SearchResult.class);
                         adapter.addAll(searchResult.facts);
+                        for (Fact f : searchResult.facts) {
+                            f.write(db);
+                        }
                         MainActivity.this.progressDialog.dismiss();
                     }
                 },

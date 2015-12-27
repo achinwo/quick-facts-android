@@ -1,10 +1,13 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.activities;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
+
+import com.aetoslabs.quickfacts.AppCompatPreferenceActivity;
+import com.aetoslabs.quickfacts.R;
 
 
 public class SettingsActivity extends AppCompatPreferenceActivity {

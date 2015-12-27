@@ -19,4 +19,9 @@
         android:title="Logout"
         android:visible="false"
         app:showAsAction="never"/>
+    <item
+        android:id="@+id/menu_test_btn"
+        android:title="Test"
+        android:visible="false"
+        app:showAsAction="always|withText" />
 </menu>

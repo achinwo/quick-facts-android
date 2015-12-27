@@ -1,4 +1,4 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.fragments;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -13,6 +13,11 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.aetoslabs.quickfacts.R;
+import com.aetoslabs.quickfacts.activities.MainActivity;
+import com.aetoslabs.quickfacts.core.Fact;
+import com.aetoslabs.quickfacts.core.Utils;
 
 import java.text.DateFormat;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.activities;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -32,6 +32,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.aetoslabs.quickfacts.BuildConfig;
+import com.aetoslabs.quickfacts.R;
+import com.aetoslabs.quickfacts.core.User;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.RequestFuture;

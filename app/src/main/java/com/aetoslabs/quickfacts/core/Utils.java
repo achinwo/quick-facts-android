@@ -1,4 +1,4 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.core;
 
 import android.util.Log;
 

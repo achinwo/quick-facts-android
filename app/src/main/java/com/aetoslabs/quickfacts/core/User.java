@@ -1,4 +1,4 @@
-package com.aetoslabs.quickfacts;
+package com.aetoslabs.quickfacts.core;
 
 import android.support.annotation.Nullable;
 
@@ -9,9 +9,11 @@ import java.io.Serializable;
  */
 public class User implements Serializable {
 
-    protected String name, email, password;
-    protected
+    public String name;
+    public String email;
+    public String password;
     @Nullable
+    public
     Integer id;
 
     @Override
