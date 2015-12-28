@@ -78,7 +78,8 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Service disconnected " + name);
         }
     };
-
+    ListView mSearchResultsView;
+    SearchResultsFragment.SearchResultsAdapter mSearchResultsViewAdapter;
     protected RequestQueue queue;
     private FactOpenHelper mFactDbHelper;
 
@@ -92,6 +93,10 @@ public class MainActivity extends AppCompatActivity
         mFactDbHelper = new FactOpenHelper(this);
 
         setContentView(R.layout.activity_main);
+
+        mSearchResultsView = (ListView) findViewById(R.id.search_result_item_fragment);
+        mSearchResultsViewAdapter = (SearchResultsFragment.SearchResultsAdapter) mSearchResultsView.getAdapter();
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -255,15 +260,6 @@ public class MainActivity extends AppCompatActivity
         addFact(new Fact(txt, session.contains(PARAM_USER_ID) ? session.getInt(PARAM_USER_ID, 0) : null));
     }
 
-    public SearchResultsFragment.SearchResultsAdapter getSearchResultsAdapter(){
-        ListView view = (ListView) findViewById(R.id.search_result_item_fragment);
-        return (SearchResultsFragment.SearchResultsAdapter) view.getAdapter();
-    }
-
-    public ListView getSearchResultsListView(){
-        return (ListView) findViewById(R.id.search_result_item_fragment);
-    }
-
     public void addFact(Fact fact){
         String url = BuildConfig.SERVER_URL + "/facts.json";
         final Gson gson = new Gson();
@@ -272,13 +268,11 @@ public class MainActivity extends AppCompatActivity
                 new Response.Listener<JSONObject>(){
                     @Override
                     public void onResponse(JSONObject response) {
-                        SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
-
-                        if (adapter.getCount() == 1 && adapter.getItem(0).userId == -1) {
-                            adapter.clear();
+                        if (mSearchResultsViewAdapter.getCount() == 1 && mSearchResultsViewAdapter.getItem(0).userId == -1) {
+                            mSearchResultsViewAdapter.clear();
                         }
-                        adapter.insert(gson.fromJson(response.toString(), Fact.class), 0);
-                        getSearchResultsListView().smoothScrollToPosition(0);
+                        mSearchResultsViewAdapter.insert(gson.fromJson(response.toString(), Fact.class), 0);
+                        mSearchResultsView.smoothScrollToPosition(0);
                     }
                 },
                 new Response.ErrorListener() {
@@ -308,7 +302,7 @@ public class MainActivity extends AppCompatActivity
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        SearchResultsFragment.SearchResultsAdapter adapter = getSearchResultsAdapter();
+                        SearchResultsFragment.SearchResultsAdapter adapter = mSearchResultsViewAdapter;
                         adapter.clear();
                         SearchResult searchResult = new Gson().fromJson(response.toString(), SearchResult.class);
                         adapter.addAll(searchResult.facts);
