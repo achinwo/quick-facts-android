@@ -6,10 +6,10 @@ android {
 
     defaultConfig {
         applicationId "com.aetoslabs.quickfacts"
-        minSdkVersion 15
+        minSdkVersion 17
         targetSdkVersion 23
-        versionCode 6
-        versionName "1.04"
+        versionCode 7
+        versionName "1.05"
         buildConfigField "String", "SERVER_URL", '"https://quick-facts.herokuapp.com"'
     }
 

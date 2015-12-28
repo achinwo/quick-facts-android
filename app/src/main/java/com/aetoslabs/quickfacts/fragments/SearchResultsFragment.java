@@ -3,14 +3,17 @@ package com.aetoslabs.quickfacts.fragments;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.ListViewCompat;
 import android.util.Log;
 import android.view.ActionMode;
+import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -52,6 +55,18 @@ public class SearchResultsFragment extends Fragment {
             results.add(new Fact("No search results...", -1));
             SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
             listView.setAdapter(adapter);
+
+            // First create the GestureListener that will include all our callbacks.
+            // Then create the GestureDetector, which takes that listener as an argument.
+//            GestureDetector.SimpleOnGestureListener gestureListener = new GestureListener();
+//            final GestureDetector gd = new GestureDetector(getActivity(), gestureListener);
+
+                /* For the view where gestures will occur, create an onTouchListener that sends
+                 * all motion events to the gesture detector.  When the gesture detector
+                 * actually detects an event, it will use the callbacks you created in the
+                 * SimpleOnGestureListener to alert your application.
+                */
+
         }
         return view;
     }
@@ -92,6 +107,37 @@ public class SearchResultsFragment extends Fragment {
                 if (convertView == null) {
                     convertView = LayoutInflater.from(getContext()).inflate(R.layout.search_result, parent, false);
                 }
+                View view = convertView;
+                Context context = view.getContext();
+                view.setClickable(true);
+                view.setFocusable(true);
+
+//                view.setOnTouchListener(new OnSwipeTouchListener(context) {
+//                    @Override
+//                    public void onSwipeLeft() {
+//                        Log.d(TAG, "touched");
+//                    }
+//                });
+
+                view.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        Log.d(TAG, "motion " + event.toString());
+                        ViewGroup.LayoutParams p = v.getLayoutParams();
+                        p.width = p.width - 1;
+                        v.setLayoutParams(p);
+                        return true;
+                    }
+                });
+
+                view.setOnDragListener(new View.OnDragListener() {
+                    @Override
+                    public boolean onDrag(View v, DragEvent event) {
+                        Log.d(TAG, "dragg " + event.toString());
+                        return true;
+                    }
+                });
+
                 TextView tv = (TextView) convertView.findViewById(R.id.content);
                 tv.setText(result.content);
                 tv.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
@@ -118,11 +164,24 @@ public class SearchResultsFragment extends Fragment {
 
                     @Override
                     public void onDestroyActionMode(ActionMode mode) {
-                        ActionBar actionBar = ((MainActivity) SearchResultsFragment.this.getActivity()).getSupportActionBar();
-                        if (actionBar != null) actionBar.show();
+                        final ActionBar actionBar = ((MainActivity) SearchResultsFragment.this.getActivity()).getSupportActionBar();
+                        if (actionBar != null) {
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    SearchResultsFragment.this.getActivity().runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            actionBar.show();
+                                        }
+                                    });
+                                }
+                            }, 250);
+                        }
                         Log.d(TAG, "showing action bar");
                     }
                 });
+
 
                 if (result.userId != null && result.userId > 0) {
                     String userName = session.getInt(MainActivity.PARAM_USER_ID, -1) == result.userId ? "" : result.userId.toString();

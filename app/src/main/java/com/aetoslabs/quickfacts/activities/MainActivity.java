@@ -9,7 +9,11 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.os.ResultReceiver;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -218,8 +222,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void doTest() {
-        int num = mService.getRandomNumber();
-        Toast.makeText(this, "number: " + num, Toast.LENGTH_SHORT).show();
+        mService.syncFacts(null, new MyResultReceiver(null));
         Log.d(TAG, "testing testing");
     }
 
@@ -335,9 +338,41 @@ public class MainActivity extends AppCompatActivity
         queue.add(jsonRequest);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "Result received " + requestCode + ", res=" + resultCode + ", data=" + data);
+    }
+
     public class SearchResult {
         protected ArrayList<Fact> facts;
         protected ArrayList<User> users;
+    }
+
+    public class MyResultReceiver extends ResultReceiver {
+        public final Parcelable.Creator<MyResultReceiver> CREATOR =
+                new Parcelable.Creator<MyResultReceiver>() {
+
+                    @Override
+                    public MyResultReceiver createFromParcel(Parcel source) {
+                        return new MyResultReceiver(null);
+                    }
+
+                    @Override
+                    public MyResultReceiver[] newArray(int size) {
+                        return new MyResultReceiver[0];
+                    }
+                };
+
+        public MyResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            Log.d(TAG, "Result received res=" + resultCode + ", data=" + resultData);
+            MainActivity.this.onActivityResult(999, resultCode, new Intent().putExtras(resultData));
+        }
+
     }
 
     public static void main(String[] args) {
