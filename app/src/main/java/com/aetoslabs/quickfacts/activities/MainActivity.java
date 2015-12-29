@@ -23,12 +23,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.aetoslabs.quickfacts.BuildConfig;
 import com.aetoslabs.quickfacts.R;
+import com.aetoslabs.quickfacts.SearchResultsView;
 import com.aetoslabs.quickfacts.SyncService;
 import com.aetoslabs.quickfacts.core.Fact;
 import com.aetoslabs.quickfacts.core.FactOpenHelper;
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Service disconnected " + name);
         }
     };
-    ListView mSearchResultsView;
+    SearchResultsView mSearchResultsView;
     SearchResultsFragment.SearchResultsAdapter mSearchResultsViewAdapter;
     protected RequestQueue queue;
     private FactOpenHelper mFactDbHelper;
@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
 
-        mSearchResultsView = (ListView) findViewById(R.id.search_result_item_fragment);
+        mSearchResultsView = (SearchResultsView) findViewById(R.id.search_result_item_fragment);
         mSearchResultsViewAdapter = (SearchResultsFragment.SearchResultsAdapter) mSearchResultsView.getAdapter();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -272,7 +272,6 @@ public class MainActivity extends AppCompatActivity
                             mSearchResultsViewAdapter.clear();
                         }
                         mSearchResultsViewAdapter.insert(gson.fromJson(response.toString(), Fact.class), 0);
-                        mSearchResultsView.smoothScrollToPosition(0);
                     }
                 },
                 new Response.ErrorListener() {
