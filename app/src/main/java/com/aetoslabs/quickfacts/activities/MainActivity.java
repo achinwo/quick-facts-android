@@ -1,22 +1,19 @@
 package com.aetoslabs.quickfacts.activities;
 
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.net.Uri;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.ResultReceiver;
-import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -31,39 +28,24 @@ import com.aetoslabs.quickfacts.R;
 import com.aetoslabs.quickfacts.SearchResultsView;
 import com.aetoslabs.quickfacts.SyncService;
 import com.aetoslabs.quickfacts.core.Fact;
-import com.aetoslabs.quickfacts.core.FactOpenHelper;
 import com.aetoslabs.quickfacts.core.User;
 import com.aetoslabs.quickfacts.fragments.AddFactFragment;
 import com.aetoslabs.quickfacts.fragments.SearchResultsFragment;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity
-        implements SearchResultsFragment.OnListFragmentInteractionListener,
-        AddFactFragment.OnFragmentInteractionListener,
-                    AddFactFragment.EditNameDialogListener,
+public class MainActivity extends BaseActivity
+        implements AddFactFragment.EditNameDialogListener,
                    SearchView.OnQueryTextListener {
     public static final String TAG = MainActivity.class.getSimpleName();
-    public static final String APP_SESSION = "QuickFactSession";
-    //public static final String APP_PREFERENCES = "QuickFactPrefs";
-    public static final String PARAM_USER_NAME = "USER_NAME";
-    public static final String PARAM_USER_EMAIL = "USER_EMAIL";
-    public static final String PARAM_USER_ID = "USER_ID";
-    public static final String PARAM_USER = "USER_OBJ";
-
-    private ProgressDialog progressDialog;
-
-    SharedPreferences session, prefs;
     SyncService mService;
     ServiceConnection mServiceConn = new ServiceConnection() {
         @Override
@@ -78,23 +60,17 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Service disconnected " + name);
         }
     };
+
     SearchResultsView mSearchResultsView;
     SearchResultsFragment.SearchResultsAdapter mSearchResultsViewAdapter;
-    protected RequestQueue queue;
-    private FactOpenHelper mFactDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        progressDialog = new ProgressDialog(this);
-        queue = Volley.newRequestQueue(this);
-        session = getSharedPreferences(APP_SESSION, Context.MODE_PRIVATE);
-        prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mFactDbHelper = new FactOpenHelper(this);
 
         setContentView(R.layout.activity_main);
 
-        mSearchResultsView = (SearchResultsView) findViewById(R.id.search_result_item_fragment);
+        mSearchResultsView = (SearchResultsView) findViewById(R.id.list);
         mSearchResultsViewAdapter = (SearchResultsFragment.SearchResultsAdapter) mSearchResultsView.getAdapter();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -128,26 +104,9 @@ public class MainActivity extends AppCompatActivity
 
         if (BuildConfig.DEBUG) {
             search("f");
+            toolbar.setBackgroundResource(android.R.color.holo_orange_dark);
         }
 
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "resumed...");
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.d(TAG, "paused...");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.d(TAG, "activity destroyed...");
     }
 
     @Override
@@ -227,24 +186,15 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void doTest() {
-        mService.syncFacts(null, new MyResultReceiver(null));
+        Fact f = new Fact();
+        Log.e(TAG, "Facts=" + f.readAll(MainActivity.this).toString());
         Log.d(TAG, "testing testing");
-    }
-
-    @Override
-    public void onListFragmentInteraction(Object item) {
-        Log.d("Fragg", "hello frag");
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
         Log.d("Main", "Query changed: " + newText);
         return false;
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-        Log.d("Main", "Fragment: " + uri.toString());
     }
 
     @Override
@@ -288,7 +238,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void search(String query){
-
+        //deleteDatabase(FactOpenHelper.DATABASE_NAME);
+        final SQLiteDatabase db = getWritableDb();
         String url = BuildConfig.SERVER_URL + "/facts.json?query=" + query;
 
         if (session.contains(PARAM_USER_ID)) {

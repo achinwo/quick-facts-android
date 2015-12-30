@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
+import android.text.Editable;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -16,11 +17,13 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.aetoslabs.quickfacts.DeleteTouchListener;
 import com.aetoslabs.quickfacts.R;
 import com.aetoslabs.quickfacts.SearchResultsView;
+import com.aetoslabs.quickfacts.activities.BaseActivity;
 import com.aetoslabs.quickfacts.activities.MainActivity;
 import com.aetoslabs.quickfacts.core.Fact;
 import com.aetoslabs.quickfacts.core.Utils;
@@ -29,15 +32,9 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-/**
- * A fragment representing a list of Items.
- * <p/>
- * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
- * interface.
- */
+
 public class SearchResultsFragment extends Fragment {
 
-    private OnListFragmentInteractionListener mListener;
     private static final String TAG = SearchResultsFragment.class.getSimpleName();
     SharedPreferences session;
 
@@ -48,35 +45,13 @@ public class SearchResultsFragment extends Fragment {
         Log.d(TAG, "onCreate() " + view.getClass().getName());
         session = getActivity().getSharedPreferences(MainActivity.APP_SESSION, Context.MODE_PRIVATE);
         Context context = view.getContext();
-        SearchResultsView listView = (SearchResultsView) view;
+        SearchResultsView listView = (SearchResultsView) view.findViewById(R.id.list);
         ArrayList<Fact> results = new ArrayList<>();
         results.add(new Fact("No search results...", -1));
         SearchResultsAdapter adapter = new SearchResultsAdapter(context, results);
         listView.setAdapter(adapter);
 
         return view;
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnListFragmentInteractionListener) {
-            mListener = (OnListFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnListFragmentInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    public interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onListFragmentInteraction(Object item);
     }
 
     public class SearchResultsAdapter extends ArrayAdapter<Fact> {
@@ -111,8 +86,9 @@ public class SearchResultsFragment extends Fragment {
                             new Handler().post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    SearchResultsAdapter.this.remove((Fact) view.getTag());
-                                    parent.invalidate();
+                                    Fact fact = (Fact) view.getTag();
+                                    SearchResultsAdapter.this.remove(fact);
+                                    fact.delete((BaseActivity) getActivity());
                                 }
                             });
                         }
@@ -144,6 +120,9 @@ public class SearchResultsFragment extends Fragment {
                         actionBar.setShowHideAnimationEnabled(true);
                         actionBar.hide();
                     }
+                    MenuItem edit = menu.add("Edit");
+                    edit.setIcon(android.R.drawable.ic_menu_edit);
+                    edit.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
                     Log.d(TAG, "Hiding action bar");
                     return true;
                 }
@@ -155,6 +134,11 @@ public class SearchResultsFragment extends Fragment {
 
                 @Override
                 public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    if (item.getTitle().equals("Edit")) {
+                        EditText factTv = (EditText) getActivity().getCurrentFocus();
+                        factTv.setEditableFactory(Editable.Factory.getInstance());
+                        return true;
+                    }
                     return false;
                 }
 

@@ -1,23 +1,25 @@
 package com.aetoslabs.quickfacts.core;
 
-import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.aetoslabs.quickfacts.activities.BaseActivity;
+import com.google.common.collect.ObjectArrays;
 import com.google.gson.annotations.SerializedName;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
  * Created by anthony on 13/12/15.
  */
-public class Fact {
+public class Fact extends DbObject implements DbObject.Reader {
     private final static String TAG = Fact.class.getSimpleName();
+    public static String DB_TABLE_NAME = "facts";
 
     public String content;
     @Nullable
@@ -28,11 +30,19 @@ public class Fact {
     @Nullable
     Integer userId;
 
-    @SerializedName("created_at")
-    public String createdAt;
+    @Override
+    @Nullable
+    public Integer getId() {
+        return id;
+    }
 
-    @SerializedName("updated_at")
-    public String updatedAt;
+    public String getTableName() {
+        return DB_TABLE_NAME;
+    }
+
+    public Fact() {
+
+    }
 
     public Fact(String content, @Nullable Integer userId) {
         this.content = content;
@@ -40,47 +50,16 @@ public class Fact {
         updatedAt = "";
     }
 
-    public String[] exclude() {
-        return new String[]{"id", "TAG"};
+    public String[] getColumnFieldNames() {
+        String[] parentFields = super.getColumnFieldNames();
+        return ObjectArrays.concat(parentFields, new String[]{"userId", "content"}, String.class);
     }
 
-    public Fact(String content){
+    public Fact(String content) {
         this.content = content;
         this.userId = null;
     }
 
-    public boolean write(SQLiteOpenHelper dbHelper) {
-        boolean successful = true;
-        Field[] allFields = Fact.class.getDeclaredFields();
-        String[] exclude = exclude();
-        for (Field field : allFields) {
-            if (Arrays.asList(exclude).contains(field.getName())) {
-                Log.d(TAG, "Excluding field " + field.getName());
-                continue;
-            }
-
-            try {
-                String strValue = field.get(this) == null ? null : field.get(this).toString();
-                ContentValues values = new ContentValues();
-                values.put(FactOpenHelper.COLUMN_NAME_FACT_ID, id);
-                values.put(FactOpenHelper.COLUMN_NAME_ATTR, field.getName());
-                values.put(FactOpenHelper.COLUMN_NAME_VALUE, strValue);
-
-                SQLiteDatabase writableDb = dbHelper.getWritableDatabase();
-                writableDb.insert(
-                        FactOpenHelper.FACTS_TABLE_NAME,
-                        FactOpenHelper.COLUMN_NAME_VALUE,
-                        values);
-                writableDb.close();
-            } catch (IllegalAccessException e) {
-                successful = false;
-                Log.e(TAG, "Error writing fact: " + e);
-            }
-
-
-        }
-        return successful;
-    }
 
     public static void main(String[] args) {
         String fmt = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -94,4 +73,50 @@ public class Fact {
         }
     }
 
+    @Override
+    public ArrayList<Fact> readAll(BaseActivity activity) {
+        ArrayList<Fact> facts = new ArrayList<>();
+        SQLiteDatabase writableDb = activity.getReadableDb();
+        Cursor c = writableDb.query(true, getTableName(), new String[]{FactOpenHelper.COLUMN_NAME_FACT_ID}, null, null, null, null, null, null);
+        ArrayList<Integer> ids = new ArrayList<>();
+        int idColIdx = c.getColumnIndex(FactOpenHelper.COLUMN_NAME_FACT_ID);
+        for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+            Integer id = c.getInt(idColIdx);
+            Cursor c2 = writableDb.query(getTableName(), null,
+                    "id=?", new String[]{String.valueOf(id)}, null, null, null, null);
+
+
+            int attrColIdx = c2.getColumnIndex(FactOpenHelper.COLUMN_NAME_ATTR);
+            int valueColIdx = c2.getColumnIndex(FactOpenHelper.COLUMN_NAME_VALUE);
+            Fact newFact = new Fact();
+            newFact.id = id;
+            for (c2.moveToFirst(); !c2.isAfterLast(); c2.moveToNext()) {
+
+                String attrName = c2.getString(attrColIdx);
+                String value = c2.getString(valueColIdx);
+                try {
+                    Field fld = Fact.class.getField(attrName);
+                    if (fld.getType() == Integer.class) {
+                        fld.set(newFact, value == null || value.toLowerCase().equals("null") ? null : Integer.valueOf(value));
+                    } else if (fld.getType() == Boolean.class) {
+                        fld.set(newFact, value == null || value.toLowerCase().equals("null") ? false : Boolean.valueOf(value));
+                    } else {
+                        fld.set(newFact, fld.getType().cast(value));
+                    }
+
+                } catch (NoSuchFieldException e) {
+                    Log.e(TAG, "Error getting attr " + attrName + " id=" + id + " error=" + e);
+                } catch (IllegalAccessException e) {
+                    Log.e(TAG, "Error population value " + attrName + " id=" + id + " error=" + e);
+                } catch (ClassCastException e) {
+                    Log.e(TAG, "Error population attr=" + attrName + " id=" + id + " value=" + value + " error=" + e);
+                }
+
+            }
+            facts.add(newFact);
+            c2.close();
+        }
+        c.close();
+        return facts;
+    }
 }

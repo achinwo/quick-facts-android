@@ -6,7 +6,6 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -16,12 +15,10 @@ import com.aetoslabs.quickfacts.BuildConfig;
 import com.aetoslabs.quickfacts.R;
 import com.aetoslabs.quickfacts.core.User;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -33,9 +30,8 @@ import java.util.Map;
 /**
  * Created by anthony on 19/12/15.
  */
-public class RegistrationActivity extends AppCompatActivity {
+public class RegistrationActivity extends BaseActivity {
     public static final String TAG = RegistrationActivity.class.getSimpleName();
-    RequestQueue queue;
     EditText mPasswordView, mPasswordConfirmationView, mNameView, mEmailView;
     private View mProgressView;
     private View mLoginFormView;
@@ -43,7 +39,6 @@ public class RegistrationActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        queue = Volley.newRequestQueue(this);
         setContentView(R.layout.activity_registration);
 
         mNameView = (EditText) findViewById(R.id.register_full_name);

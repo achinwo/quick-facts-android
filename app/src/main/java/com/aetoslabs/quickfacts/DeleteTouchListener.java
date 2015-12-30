@@ -1,6 +1,5 @@
 package com.aetoslabs.quickfacts;
 
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,7 +57,7 @@ public class DeleteTouchListener implements View.OnTouchListener {
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         int act = event.getAction();
-        Log.d(TAG, event.toString());
+        //Log.d(TAG, event.toString());
 
         if (act == MotionEvent.ACTION_DOWN) {
             isDown = true;
@@ -70,7 +69,7 @@ public class DeleteTouchListener implements View.OnTouchListener {
             double distY = Math.abs(event.getY() - startY);
             int distX = (int) (event.getX() - startX);
 
-            double THRESHOLD_Y = 45.0;
+            double THRESHOLD_Y = 100;
             if (distY < THRESHOLD_Y) {
                 if (event.getX() > startX) setMarginStart(mOrigMarginStart + distX);
                 if (distX > THRESHOLD_DELETE && mDeleteCallback != null)
@@ -81,11 +80,11 @@ public class DeleteTouchListener implements View.OnTouchListener {
             }
         }
 
-        if (isDown && act == MotionEvent.ACTION_UP) {
+        if (isDown && (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL)) {
             isDown = false;
             float endX = event.getX();
             setMarginStart(mOrigMarginStart);
         }
-        return true;
+        return false;
     }
 }
