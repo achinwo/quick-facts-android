@@ -1,18 +1,14 @@
 package com.aetoslabs.quickfacts.activities;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Parcel;
-import android.os.Parcelable;
-import android.os.ResultReceiver;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -28,23 +24,22 @@ import com.aetoslabs.quickfacts.R;
 import com.aetoslabs.quickfacts.SearchResultsView;
 import com.aetoslabs.quickfacts.SyncService;
 import com.aetoslabs.quickfacts.core.Fact;
+import com.aetoslabs.quickfacts.core.ServerResponse;
 import com.aetoslabs.quickfacts.core.User;
+import com.aetoslabs.quickfacts.core.Utils;
 import com.aetoslabs.quickfacts.fragments.AddFactFragment;
 import com.aetoslabs.quickfacts.fragments.SearchResultsFragment;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.TimeoutError;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.gson.Gson;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
-import org.json.JSONObject;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
 
-import java.util.ArrayList;
-
-public class MainActivity extends BaseActivity
-        implements AddFactFragment.EditNameDialogListener,
-                   SearchView.OnQueryTextListener {
+public class MainActivity extends BaseActivity implements AddFactFragment.EditNameDialogListener,
+        SearchView.OnQueryTextListener {
     public static final String TAG = MainActivity.class.getSimpleName();
     SyncService mService;
     ServiceConnection mServiceConn = new ServiceConnection() {
@@ -52,6 +47,18 @@ public class MainActivity extends BaseActivity
         public void onServiceConnected(ComponentName name, IBinder service) {
             mService = ((SyncService.SyncServiceBinder) service).getService();
             Log.d(TAG, "Service connected " + name + " " + service);
+
+            if (BuildConfig.DEBUG) {
+                Integer userId = null;
+                boolean includeAnon = true;
+                if (isLoggedIn()) {
+                    userId = session.getInt(PARAM_USER_ID, -1);
+                    includeAnon = prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
+                }
+                mService.search("f", userId, includeAnon);
+                mProgressDialog.setMessage("Searching Facts...");
+                mProgressDialog.show();
+            }
         }
 
         @Override
@@ -59,6 +66,15 @@ public class MainActivity extends BaseActivity
             mService = null;
             Log.d(TAG, "Service disconnected " + name);
         }
+    };
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MainActivity.this.onReceive(context, intent);
+        }
+
     };
 
     SearchResultsView mSearchResultsView;
@@ -103,10 +119,57 @@ public class MainActivity extends BaseActivity
         }
 
         if (BuildConfig.DEBUG) {
-            search("f");
             toolbar.setBackgroundResource(android.R.color.holo_orange_dark);
         }
 
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(SyncService.ACTION_SEARCH_RESULT);
+        filter.addAction(SyncService.ACTION_ADD_FACT);
+        registerReceiver(receiver, filter);
+        Log.d(TAG, "onCreate: registered receiver");
+    }
+
+    public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "onReceive: " + context + " Int=" + intent);
+        String action = intent.getAction();
+        ServerResponse response = (ServerResponse) intent.getSerializableExtra(SyncService.KEY_SERVER_RESPONSE);
+
+        if (response.errors != null && !response.errors.isEmpty()) {
+            for (Map.Entry<String, String> pair : response.errors.entrySet()) {
+                Log.e(TAG, pair.getKey() + ": " + pair.getValue());
+            }
+            MainActivity.this.mProgressDialog.dismiss();
+            Toast.makeText(this, (String) response.errors.values().toArray()[0], Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (action.equals(SyncService.ACTION_SEARCH_RESULT)) {
+            mSearchResultsViewAdapter.clear();
+            mSearchResultsViewAdapter.addAll(Lists.newArrayList(Iterables.filter(response.facts, new Predicate<Fact>() {
+                @Override
+                public boolean apply(Fact input) {
+                    return !input.isDeleted();
+                }
+            })));
+            mSearchResultsView.scrollTo(0, 0);
+
+        } else if (action.equals(SyncService.ACTION_ADD_FACT)) {
+            if (mSearchResultsViewAdapter.getCount() == 1 && mSearchResultsViewAdapter.getItem(0).userId == -1) {
+                mSearchResultsViewAdapter.clear();
+            }
+            mSearchResultsViewAdapter.insert(response.fact, 0);
+        } else {
+            Log.e(TAG, "onReceive: Unkown action \"" + action + "\"");
+        }
+
+        MainActivity.this.mProgressDialog.dismiss();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+        Log.d(TAG, "onDestroy: unregistered receiver");
     }
 
     @Override
@@ -186,9 +249,14 @@ public class MainActivity extends BaseActivity
     }
 
     private void doTest() {
-        Fact f = new Fact();
-        Log.e(TAG, "Facts=" + f.readAll(MainActivity.this).toString());
-        Log.d(TAG, "testing testing");
+        //Log.d(TAG, "Unsorted " + (new Fact().getLastUpdated(MainActivity.this)));
+        Date date = new Date();
+        String fmt = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+        String dateFormat = new SimpleDateFormat(Utils.DATE_TIME_FORMAT, Locale.ENGLISH).format(date);
+        Log.d(TAG, "Time: " + dateFormat);
+        //Log.d(TAG, "Test " + SyncService.ACTION_SEARCH_RESULT);
+        //mService.addFact(new Fact("some random fact! " + new Random().nextLong(), session.contains(PARAM_USER_ID) ? session.getInt(PARAM_USER_ID, 0) : null));
+        Log.d(TAG, "doTest: done");
     }
 
     @Override
@@ -200,123 +268,22 @@ public class MainActivity extends BaseActivity
     @Override
     public boolean onQueryTextSubmit(String query) {
         Log.d("Main", "Submitted: " + query);
-        search(query);
+        Integer userId = null;
+        boolean includeAnon = true;
+        if (isLoggedIn()) {
+            userId = session.getInt(PARAM_USER_ID, -1);
+            includeAnon = prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
+        }
+        mService.search(query, userId, includeAnon);
+        mProgressDialog.setMessage("Searching Facts...");
+        mProgressDialog.show();
         return false;
     }
 
-    public void onFinishEditDialog(String txt){
+    public void onFinishEditDialog(String txt) {
         Log.d(TAG, "Finished: " + txt);
         if (txt.trim().isEmpty()) return;
-        addFact(new Fact(txt, session.contains(PARAM_USER_ID) ? session.getInt(PARAM_USER_ID, 0) : null));
-    }
-
-    public void addFact(Fact fact){
-        String url = BuildConfig.SERVER_URL + "/facts.json";
-        final Gson gson = new Gson();
-
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, gson.toJson(fact),
-                new Response.Listener<JSONObject>(){
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        if (mSearchResultsViewAdapter.getCount() == 1 && mSearchResultsViewAdapter.getItem(0).userId == -1) {
-                            mSearchResultsViewAdapter.clear();
-                        }
-                        mSearchResultsViewAdapter.insert(gson.fromJson(response.toString(), Fact.class), 0);
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this,
-                                (error instanceof TimeoutError) ? "Server timedout, please try again momentarily"
-                                        : "Error: " + error.toString(),
-                                Toast.LENGTH_LONG).show();
-                    }
-                }
-        );
-        queue.add(jsonRequest);
-    }
-
-    public void search(String query){
-        //deleteDatabase(FactOpenHelper.DATABASE_NAME);
-        final SQLiteDatabase db = getWritableDb();
-        String url = BuildConfig.SERVER_URL + "/facts.json?query=" + query;
-
-        if (session.contains(PARAM_USER_ID)) {
-            url += "&user_id=" + session.getInt(PARAM_USER_ID, -1);
-            url += "&include_anon=" + prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
-        }
-
-        Log.d(TAG, "URL=" + url);
-        final JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.GET, url,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        SearchResultsFragment.SearchResultsAdapter adapter = mSearchResultsViewAdapter;
-                        adapter.clear();
-                        SearchResult searchResult = new Gson().fromJson(response.toString(), SearchResult.class);
-                        adapter.addAll(searchResult.facts);
-                        MainActivity.this.progressDialog.dismiss();
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this,
-                                (error instanceof TimeoutError) ? "Server timedout, please try again momentarily"
-                                        : "Error: " + error.toString().substring(0, 100),
-                                Toast.LENGTH_LONG).show();
-                        MainActivity.this.progressDialog.dismiss();
-                    }
-                }
-        );
-
-        progressDialog.setMessage("Searching facts...");
-        progressDialog.show();
-        progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            public void onCancel(DialogInterface arg0) {
-                jsonRequest.cancel();
-                Log.d(TAG, "search cancelled");
-            }
-        });
-        queue.add(jsonRequest);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d(TAG, "Result received " + requestCode + ", res=" + resultCode + ", data=" + data);
-    }
-
-    public class SearchResult {
-        protected ArrayList<Fact> facts;
-        protected ArrayList<User> users;
-    }
-
-    public class MyResultReceiver extends ResultReceiver {
-        public final Parcelable.Creator<MyResultReceiver> CREATOR =
-                new Parcelable.Creator<MyResultReceiver>() {
-
-                    @Override
-                    public MyResultReceiver createFromParcel(Parcel source) {
-                        return new MyResultReceiver(null);
-                    }
-
-                    @Override
-                    public MyResultReceiver[] newArray(int size) {
-                        return new MyResultReceiver[0];
-                    }
-                };
-
-        public MyResultReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-            Log.d(TAG, "Result received res=" + resultCode + ", data=" + resultData);
-            MainActivity.this.onActivityResult(999, resultCode, new Intent().putExtras(resultData));
-        }
-
+        mService.addFact(new Fact(txt, session.contains(PARAM_USER_ID) ? session.getInt(PARAM_USER_ID, 0) : null));
     }
 
     public static void main(String[] args) {

@@ -337,7 +337,12 @@ public class LoginActivity extends BaseActivity implements LoaderCallbacks<Curso
             RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
 
-            String url = BuildConfig.SERVER_URL + "/authenticate.json";
+            Uri.Builder builder = new Uri.Builder();
+            builder.scheme("http")
+                    .encodedAuthority(BuildConfig.SERVER_URL)
+                    .appendPath("authenticate.json");
+
+            String url = builder.build().toString();
 
             boolean authenticated = false;
             try {

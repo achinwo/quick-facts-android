@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -49,7 +50,7 @@ public class RegistrationActivity extends BaseActivity {
         mLoginFormView = findViewById(R.id.register_form);
         mProgressView = findViewById(R.id.register_progress);
 
-        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+        if (BuildConfig.DEBUG) {
             mNameView.setText("Tester1");
             mEmailView.setText("tester@tested1.com");
             mPasswordView.setText("testing");
@@ -71,7 +72,12 @@ public class RegistrationActivity extends BaseActivity {
 
         showProgress(true);
 
-        String registrationUrl = BuildConfig.SERVER_URL + "/users.json";
+        Uri.Builder builder = new Uri.Builder();
+
+
+        String registrationUrl = builder.scheme("http")
+                .encodedAuthority(BuildConfig.SERVER_URL)
+                .appendPath("users.json").build().toString();
         User newUser = new User();
         newUser.email = mEmailView.getText().toString();
         newUser.name = mNameView.getText().toString();

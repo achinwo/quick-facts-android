@@ -24,4 +24,8 @@ public class Utils {
         }
         return date;
     }
+
+    public static String getNow() {
+        return new SimpleDateFormat(Utils.DATE_TIME_FORMAT, Locale.ENGLISH).format(new Date());
+    }
 }

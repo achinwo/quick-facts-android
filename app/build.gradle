@@ -6,11 +6,11 @@ android {
 
     defaultConfig {
         applicationId "com.aetoslabs.quickfacts"
-        minSdkVersion 17
+        minSdkVersion 19
         targetSdkVersion 23
-        versionCode 7
-        versionName "1.05"
-        buildConfigField "String", "SERVER_URL", '"https://quick-facts.herokuapp.com"'
+        versionCode 8
+        versionName "1.06"
+        buildConfigField "String", "SERVER_URL", '"quick-facts.herokuapp.com"'
     }
 
     buildTypes {
@@ -22,7 +22,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             //buildConfigField "String", "SERVER_URL", '"https://quick-facts.herokuapp.com"'
-            buildConfigField "String", "SERVER_URL", '"http://192.168.1.6:3000"'
+            buildConfigField "String", "SERVER_URL", '"192.168.1.6:3000"'
         }
     }
 }
@@ -30,7 +30,7 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile group: 'com.google.guava', name: 'guava', version: '12.0'
+    compile group: 'com.google.guava', name: 'guava', version: '18.0'
     compile 'com.mcxiaoke.volley:library:1.0.19'
     compile 'com.google.code.gson:gson:2.4'
     compile 'com.android.support:cardview-v7:23.1.1'

@@ -8,14 +8,14 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 
-import com.aetoslabs.quickfacts.core.FactOpenHelper;
+import com.aetoslabs.quickfacts.core.DbOpenHelper;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
 /**
  * Created by anthony on 29/12/15.
  */
-public class BaseActivity extends AppCompatActivity {
+public class BaseActivity extends AppCompatActivity implements BaseContext{
 
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final String APP_SESSION = "QuickFactSession";
@@ -24,20 +24,24 @@ public class BaseActivity extends AppCompatActivity {
     public static final String PARAM_USER_ID = "USER_ID";
     public static final String PARAM_USER = "USER_OBJ";
 
-    protected ProgressDialog progressDialog;
+    protected ProgressDialog mProgressDialog;
 
     protected SharedPreferences session, prefs;
     protected RequestQueue queue;
-    protected FactOpenHelper mFactDbHelper;
+    protected DbOpenHelper mFactDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        progressDialog = new ProgressDialog(this);
+        mProgressDialog = new ProgressDialog(this);
         queue = Volley.newRequestQueue(this);
         session = getSharedPreferences(APP_SESSION, Context.MODE_PRIVATE);
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mFactDbHelper = new FactOpenHelper(this);
+        mFactDbHelper = new DbOpenHelper(this);
+    }
+
+    public boolean isLoggedIn(){
+        return session.contains(PARAM_USER_ID);
     }
 
     public SQLiteDatabase getWritableDb() {
