@@ -1,6 +1,5 @@
 package com.aetoslabs.quickfacts.activities;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -21,6 +20,7 @@ import android.widget.Toast;
 
 import com.aetoslabs.quickfacts.BuildConfig;
 import com.aetoslabs.quickfacts.R;
+import com.aetoslabs.quickfacts.RegistrationIntentService;
 import com.aetoslabs.quickfacts.SearchResultsView;
 import com.aetoslabs.quickfacts.SyncService;
 import com.aetoslabs.quickfacts.core.Fact;
@@ -66,15 +66,6 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
             mService = null;
             Log.d(TAG, "Service disconnected " + name);
         }
-    };
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            MainActivity.this.onReceive(context, intent);
-        }
-
     };
 
     SearchResultsView mSearchResultsView;
@@ -125,13 +116,25 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         IntentFilter filter = new IntentFilter();
         filter.addAction(SyncService.ACTION_SEARCH_RESULT);
         filter.addAction(SyncService.ACTION_ADD_FACT);
+        filter.addAction(RegistrationIntentService.ACTION_REGISTRATION_COMPLETE);
         registerReceiver(receiver, filter);
+
+        // Start IntentService to register this application with GCM.
+        Intent intent = new Intent(this, RegistrationIntentService.class);
+        startService(intent);
         Log.d(TAG, "onCreate: registered receiver");
     }
 
-    public void onReceive(Context context, Intent intent) {
+    public void onReceiveBroadcast(Context context, Intent intent) {
         Log.d(TAG, "onReceive: " + context + " Int=" + intent);
         String action = intent.getAction();
+
+        if (action.equals(RegistrationIntentService.ACTION_REGISTRATION_COMPLETE)) {
+            Log.d(TAG, "onReceive: registration complete " + intent);
+            MainActivity.this.mProgressDialog.dismiss();
+            return;
+        }
+
         ServerResponse response = (ServerResponse) intent.getSerializableExtra(SyncService.KEY_SERVER_RESPONSE);
 
         if (response.errors != null && !response.errors.isEmpty()) {

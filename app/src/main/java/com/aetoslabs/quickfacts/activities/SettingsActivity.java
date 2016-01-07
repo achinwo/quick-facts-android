@@ -12,6 +12,7 @@ import com.aetoslabs.quickfacts.R;
 
 public class SettingsActivity extends AppCompatPreferenceActivity {
     public static final String PREF_KEY_INCLUDE_ANON_FACTS = "pref_include_anon_facts";
+    public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     private final String TAG = SettingsActivity.class.getSimpleName();
 
     @Override

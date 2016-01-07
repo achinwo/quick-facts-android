@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "project_id": "quick-facts",
+    "project_number": "584971318607",
+    "name": "Quick Facts"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584971318607:android:6be50f9d2e7cf874",
+        "client_id": "android:com.aetoslabs.quickfacts",
+        "client_type": 1,
+        "android_client_info": {
+          "package_name": "com.aetoslabs.quickfacts"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "cloud_messaging_service": {
+          "status": 2,
+          "apns_config": []
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "google_signin_service": {
+          "status": 1
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584971318607:android:4bc5ccfa9d9021ed",
+        "client_id": "android:com.aetoslabs.quickfacts.debug",
+        "client_type": 1,
+        "android_client_info": {
+          "package_name": "com.aetoslabs.quickfacts.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "cloud_messaging_service": {
+          "status": 2,
+          "apns_config": []
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "google_signin_service": {
+          "status": 1
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "client_info": [],
+  "ARTIFACT_VERSION": "1"
+}

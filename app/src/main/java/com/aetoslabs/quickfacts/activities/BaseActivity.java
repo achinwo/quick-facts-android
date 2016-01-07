@@ -1,7 +1,9 @@
 package com.aetoslabs.quickfacts.activities;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -29,6 +31,14 @@ public class BaseActivity extends AppCompatActivity implements BaseContext{
     protected SharedPreferences session, prefs;
     protected RequestQueue queue;
     protected DbOpenHelper mFactDbHelper;
+    protected BroadcastReceiver receiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            onReceiveBroadcast(context, intent);
+        }
+
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +52,10 @@ public class BaseActivity extends AppCompatActivity implements BaseContext{
 
     public boolean isLoggedIn(){
         return session.contains(PARAM_USER_ID);
+    }
+
+    public void onReceiveBroadcast(Context context, Intent intent) {
+
     }
 
     public SQLiteDatabase getWritableDb() {
