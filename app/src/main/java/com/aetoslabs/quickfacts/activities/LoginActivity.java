@@ -7,12 +7,11 @@ import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -33,21 +32,13 @@ import android.widget.Toast;
 
 import com.aetoslabs.quickfacts.BuildConfig;
 import com.aetoslabs.quickfacts.R;
-import com.aetoslabs.quickfacts.core.User;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.RequestFuture;
-import com.android.volley.toolbox.Volley;
-import com.google.gson.Gson;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.aetoslabs.quickfacts.SyncService;
+import com.aetoslabs.quickfacts.core.ServerResponse;
+import com.aetoslabs.quickfacts.tasks.LoginTask;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -61,11 +52,13 @@ public class LoginActivity extends BaseActivity implements LoaderCallbacks<Curso
      */
     private static final int REQUEST_READ_CONTACTS = 0;
     public static final String TAG = LoginActivity.class.getSimpleName();
+    private static final String ACTION_USER_LOGIN = "LOGIN_USER";
+    public static final String ACTION_USER_LOGGED_IN = "USER_LOGGED_IN";
 
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
-    private UserLoginTask mAuthTask = null;
+    private LoginTask mAuthTask = null;
 
     // UI references.
     private AutoCompleteTextView mEmailView;
@@ -187,7 +180,7 @@ public class LoginActivity extends BaseActivity implements LoaderCallbacks<Curso
         View focusView = null;
 
         // Check for a valid password, if the user entered one.
-        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
+        if (TextUtils.isEmpty(password)) {
             mPasswordView.setError(getString(R.string.error_invalid_password));
             focusView = mPasswordView;
             cancel = true;
@@ -212,19 +205,18 @@ public class LoginActivity extends BaseActivity implements LoaderCallbacks<Curso
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, password);
-            mAuthTask.execute((Void) null);
+
+            Uri.Builder builder = new Uri.Builder();
+            String loginUrl = builder.scheme("http").appendEncodedPath(BuildConfig.SERVER_URL)
+                    .appendPath("login").build().toString();
+
+            mAuthTask = new LoginTask(this, queue, ACTION_USER_LOGIN, email, password);
+            mAuthTask.execute(loginUrl);
         }
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
         return email.contains("@");
-    }
-
-    private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
-        return password.length() > 4;
     }
 
     /**
@@ -317,82 +309,58 @@ public class LoginActivity extends BaseActivity implements LoaderCallbacks<Curso
         int IS_PRIMARY = 1;
     }
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    @Override
+    protected void onStart() {
+        super.onStart();
+        registerReceiver(receiver, new IntentFilter(ACTION_USER_LOGIN));
+        Log.d(TAG, "onStart: registered receiver");
+    }
 
-        private final String mEmail;
-        private final String mPassword;
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(receiver);
+        Log.d(TAG, "onStop: unregistered receiver");
+    }
 
-        UserLoginTask(String email, String password) {
-            mEmail = email;
-            mPassword = password;
-        }
+    public void onReceiveBroadcast(Context context, Intent intent) {
+        Log.d(TAG, "onReceiveBroadcast: " + context);
+        showProgress(false);
+        mAuthTask = null;
 
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            int REQUEST_TIMEOUT = 10;
-            RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
-            RequestFuture<JSONObject> future = RequestFuture.newFuture();
+        ServerResponse response = (ServerResponse) intent.getSerializableExtra(SyncService.KEY_SERVER_RESPONSE);
+        if (response.errors != null && !response.errors.isEmpty()) {
 
-            Uri.Builder builder = new Uri.Builder();
-            builder.scheme("http")
-                    .encodedAuthority(BuildConfig.SERVER_URL)
-                    .appendPath("authenticate.json");
+            HashMap<String, String[]> errorMap = response.errors;
+            Log.d(TAG, errorMap.toString());
 
-            String url = builder.build().toString();
-
-            boolean authenticated = false;
-            try {
-                JSONObject cred = new JSONObject("{\"email\":\"" + mEmail + "\", \"password\":\"" + mPassword + "\"}");
-                JsonObjectRequest request = new JsonObjectRequest(url, cred, future, future);
-                requestQueue.add(request);
-                JSONObject response = future.get(REQUEST_TIMEOUT, TimeUnit.SECONDS); // this will block (forever)
-                User user = new Gson().fromJson(response.toString(), User.class);
-
-                if (user.id != null) {
-                    SharedPreferences.Editor editor = getSharedPreferences(MainActivity.APP_SESSION, Context.MODE_PRIVATE).edit();
-                    editor.putString(MainActivity.PARAM_USER_NAME, user.name);
-                    editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
-                    editor.putInt(MainActivity.PARAM_USER_ID, user.id);
-                    editor.apply();
-
-                    Log.d(TAG, "Credentials: " + user.name + "  " + user.email);
-                    authenticated = true;
-                }
-            } catch (InterruptedException e) {
-                Log.e(TAG, "thing was interrupted " + e);
-            } catch (ExecutionException e) {
-                Log.e(TAG, "thing errored " + e);
-            } catch (TimeoutException e) {
-                Toast.makeText(LoginActivity.this, "Server timedout, please try again momentarily", Toast.LENGTH_LONG).show();
-            } catch (JSONException e) {
-                Log.e(TAG, "Json issue " + e);
-            }
-            return authenticated;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
-            showProgress(false);
-
-            if (success) {
-                Toast.makeText(LoginActivity.this, "Log in successful", Toast.LENGTH_SHORT).show();
-                finish();
-            } else {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
+            if (errorMap.containsKey("password")) {
+                mPasswordView.setError(errorMap.get("password")[0]);
                 mPasswordView.requestFocus();
             }
-        }
 
-        @Override
-        protected void onCancelled() {
-            mAuthTask = null;
-            showProgress(false);
+            if (errorMap.containsKey("email")) {
+                mEmailView.setError(errorMap.get("email")[0]);
+            }
+
+            if (errorMap.containsKey("ExecutionException")) {
+                Toast.makeText(this, errorMap.get("ExecutionException")[0], Toast.LENGTH_LONG).show();
+            }
+
+        } else {
+            if (response.user.login(this)) {
+                Toast.makeText(this, "Logged in " + response.user.name, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Logged in failed!", Toast.LENGTH_SHORT).show();
+            }
+
+            Intent mainActivityIntent = new Intent(this, MainActivity.class);
+            mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(mainActivityIntent);
+            finish();
         }
     }
+
+
 }
 

@@ -15,6 +15,7 @@ import com.android.volley.RequestQueue;
  */
 public abstract class BaseTask<Param, Progress> extends AsyncTask<Param, Progress, ServerResponse> {
     private static String TAG = BaseTask.class.getSimpleName();
+    public static final int REQUEST_TIMEOUT_SECS = 10;
 
     BaseContext mContext;
     RequestQueue mRequestQueue;

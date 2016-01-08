@@ -25,7 +25,7 @@ import java.util.List;
  */
 public abstract class DbObject implements Serializable {
 
-    private static final String TAG = DbObject.class.getSimpleName();
+    private final String TAG = DbObject.class.getSimpleName();
 
     @SerializedName("created_at")
     public String createdAt;
@@ -95,7 +95,7 @@ public abstract class DbObject implements Serializable {
                 dbObjs.add((T) findById(baseContext, c.getInt(idColIdx)));
             }
         }
-        Log.d(TAG, "readAll (" + this.getClass().getSimpleName() + "): " + dbObjs.size());
+        Log.d(this.TAG, "readAll (" + this.getClass().getSimpleName() + "): " + dbObjs.size());
         return dbObjs;
     }
 
@@ -116,7 +116,7 @@ public abstract class DbObject implements Serializable {
         String selection = DbOpenHelper.COLUMN_NAME_ID + " = ? AND " +
                 DbOpenHelper.COLUMN_NAME_ATTR + " = ?";
         String[] selectionArgs = {String.valueOf(id), attrName};
-        Log.d(TAG, "before delete: " + this);
+        Log.d(this.TAG, "before delete: " + this);
         try (SQLiteDatabase writableDb = baseContext.getWritableDb()) {
             deleted = writableDb.update(getTableName(), values, selection, selectionArgs) > 0;
         }
@@ -126,9 +126,9 @@ public abstract class DbObject implements Serializable {
             intent.putExtra(SyncService.KEY_DELETED_FACT_ID, getId());
             baseContext.sendBroadcast(intent);
         } else {
-            Log.e(TAG, "Deleted Failed: " + toString());
+            Log.e(this.TAG, "Deleted Failed: " + toString());
         }
-        Log.d(TAG, "after delete: " + this);
+        Log.d(this.TAG, "after delete: " + this);
         return isDeleted();
     }
 
@@ -155,7 +155,7 @@ public abstract class DbObject implements Serializable {
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 existingCols.add(cursor.getString(valueColIdx));
             }
-            Log.d(TAG, "Number of existing entries: " + cursor.getCount() + " Existing=" + existingCols);
+            Log.d(this.TAG, "Number of existing entries: " + cursor.getCount() + " Existing=" + existingCols);
         }
 
         boolean successful = true;
@@ -184,8 +184,8 @@ public abstract class DbObject implements Serializable {
 
             } catch (IllegalAccessException e) {
                 successful = false;
-                Log.e(TAG, "Error attr=" + attrName + " value=" + strValue);
-                Log.e(TAG, "Error writing fact: " + e);
+                Log.e(this.TAG, "Error attr=" + attrName + " value=" + strValue);
+                Log.e(this.TAG, "Error writing fact: " + e);
             }
         }
         writableDb.close();
@@ -213,7 +213,7 @@ public abstract class DbObject implements Serializable {
             try {
                 b.append(String.format("%s=%s, \n", field.getName(), field.get(this)));
             } catch (IllegalAccessException e) {
-                Log.e(TAG, "toString Error: " + e);
+                Log.e(this.TAG, "toString Error: " + e);
             }
         }
         return b.append("}").toString();

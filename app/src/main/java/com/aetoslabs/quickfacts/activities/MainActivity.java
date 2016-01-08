@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
@@ -53,7 +52,7 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
                 boolean includeAnon = true;
                 if (isLoggedIn()) {
                     userId = session.getInt(PARAM_USER_ID, -1);
-                    includeAnon = prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
+                    includeAnon = getPrefs().getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
                 }
                 mService.search("f", userId, includeAnon);
                 mProgressDialog.setMessage("Searching Facts...");
@@ -97,18 +96,6 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         });
         Log.d(TAG, "On create..." + savedInstanceState);
 
-        Bundle extras = getIntent().getExtras();
-        if (extras != null && extras.getSerializable(PARAM_USER) != null) {
-            User user = (User) extras.getSerializable(PARAM_USER);
-            Log.d(TAG, "Extra " + user);
-            SharedPreferences.Editor editor = session.edit();
-            editor.putString(MainActivity.PARAM_USER_NAME, user.name);
-            editor.putString(MainActivity.PARAM_USER_EMAIL, user.email);
-            editor.putInt(MainActivity.PARAM_USER_ID, user.id);
-            editor.commit();
-            Toast.makeText(this, "Logged in " + user.name, Toast.LENGTH_SHORT).show();
-        }
-
         if (BuildConfig.DEBUG) {
             toolbar.setBackgroundResource(android.R.color.holo_orange_dark);
         }
@@ -117,6 +104,7 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         filter.addAction(SyncService.ACTION_SEARCH_RESULT);
         filter.addAction(SyncService.ACTION_ADD_FACT);
         filter.addAction(RegistrationIntentService.ACTION_REGISTRATION_COMPLETE);
+        filter.addAction(LoginActivity.ACTION_USER_LOGGED_IN);
         registerReceiver(receiver, filter);
 
         // Start IntentService to register this application with GCM.
@@ -138,11 +126,11 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         ServerResponse response = (ServerResponse) intent.getSerializableExtra(SyncService.KEY_SERVER_RESPONSE);
 
         if (response.errors != null && !response.errors.isEmpty()) {
-            for (Map.Entry<String, String> pair : response.errors.entrySet()) {
-                Log.e(TAG, pair.getKey() + ": " + pair.getValue());
+            for (Map.Entry<String, String[]> pair : response.errors.entrySet()) {
+                Log.e(TAG, pair.getKey() + ": " + pair.getValue()[0]);
             }
             MainActivity.this.mProgressDialog.dismiss();
-            Toast.makeText(this, (String) response.errors.values().toArray()[0], Toast.LENGTH_LONG).show();
+            Toast.makeText(this, response.errors.values().iterator().next()[0], Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -166,6 +154,11 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         }
 
         MainActivity.this.mProgressDialog.dismiss();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult: req_code=" + requestCode + " res_code=" + resultCode);
     }
 
     @Override
@@ -201,7 +194,7 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (session.contains(PARAM_USER_ID)) {
+        if (getCurrentUser() != null) {
             menu.findItem(R.id.menu_login).setVisible(false);
             menu.findItem(R.id.menu_create_account).setVisible(false);
 
@@ -226,12 +219,11 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
                 startActivity(intent);
                 break;
             case R.id.menu_logout:
-                SharedPreferences.Editor editor = session.edit();
-                String userName = session.getString(PARAM_USER_NAME, "");
-                editor.clear();
-                editor.commit();
+                User currentUser = getCurrentUser();
+                currentUser.logout(this);
                 invalidateOptionsMenu();
-                Toast.makeText(this, "Logged out " + userName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Logged out " + currentUser.name, Toast.LENGTH_SHORT).show();
+                recreate();
                 break;
             case R.id.menu_create_account:
                 Intent registerActivity = new Intent(this, RegistrationActivity.class);
@@ -275,7 +267,7 @@ public class MainActivity extends BaseActivity implements AddFactFragment.EditNa
         boolean includeAnon = true;
         if (isLoggedIn()) {
             userId = session.getInt(PARAM_USER_ID, -1);
-            includeAnon = prefs.getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
+            includeAnon = getPrefs().getBoolean(SettingsActivity.PREF_KEY_INCLUDE_ANON_FACTS, false);
         }
         mService.search(query, userId, includeAnon);
         mProgressDialog.setMessage("Searching Facts...");

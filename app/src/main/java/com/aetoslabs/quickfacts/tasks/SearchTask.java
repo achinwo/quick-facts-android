@@ -25,10 +25,9 @@ public class SearchTask extends BaseTask<String, Void> {
     @Override
     public ServerResponse onDoInBackground(String... params) throws Exception {
         String url = params[0];
-        int REQUEST_TIMEOUT = 10;
         RequestFuture<JSONObject> future = RequestFuture.newFuture();
         mRequestQueue.add(new JsonObjectRequest(Request.Method.GET, url, future, future));
-        JSONObject response = future.get(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+        JSONObject response = future.get(REQUEST_TIMEOUT_SECS, TimeUnit.SECONDS);
         ServerResponse serverResponse = new Gson().fromJson(response.toString(), ServerResponse.class);
         serverResponse.writeAll(mContext);
         return serverResponse;

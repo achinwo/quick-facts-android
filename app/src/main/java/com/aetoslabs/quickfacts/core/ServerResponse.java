@@ -16,7 +16,7 @@ public class ServerResponse implements Serializable {
     private static String TAG = ServerResponse.class.getSimpleName();
 
 
-    public HashMap<String, String> errors;
+    public HashMap<String, String[]> errors;
     public ArrayList<Fact> facts;
     public ArrayList<User> users;
     public Fact fact;
@@ -36,6 +36,6 @@ public class ServerResponse implements Serializable {
 
     public void addError(Throwable e) {
         if (errors == null) errors = new HashMap<>();
-        errors.put(e.getClass().getSimpleName(), e.getMessage());
+        errors.put(e.getClass().getSimpleName(), new String[]{e.getMessage()});
     }
 }
