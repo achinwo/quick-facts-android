@@ -1,24 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
 
+    <TextView
+        android:id="@+id/no_results"
+        style="?android:attr/textSuggestionsWindowStyle"
 
-<com.aetoslabs.quickfacts.SearchResultsView xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:id="@+id/list"
-        android:name="com.aetoslabs.quickfacts.SearchResultsFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="4dp"
-        android:layout_marginRight="4dp"
-        android:layout_marginTop="4dp"
-        android:divider="@android:color/transparent"
-        android:focusable="true"
-        android:orientation="vertical"
-        app:layoutManager="LinearLayoutManager"
-        tools:context=".fragments.SearchResultsFragment"
-        tools:listitem="@layout/search_result"
-        tools:showIn="@layout/activity_main" />
-</ScrollView>
+        android:text="No Search Results..."
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:visibility="gone" />
+
+    <ScrollView
+        android:id="@+id/search_results_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <com.aetoslabs.quickfacts.SearchResultsView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/list"
+            android:name="com.aetoslabs.quickfacts.SearchResultsFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:layout_marginTop="4dp"
+            android:divider="@android:color/transparent"
+            android:focusable="true"
+            android:orientation="vertical"
+            app:layoutManager="LinearLayoutManager"
+            tools:context=".fragments.SearchResultsFragment"
+            tools:listitem="@layout/search_result"
+            tools:showIn="@layout/activity_main" />
+    </ScrollView>
+</LinearLayout>

@@ -1,7 +1,10 @@
 package com.aetoslabs.quickfacts.fragments;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
@@ -13,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.aetoslabs.quickfacts.DeleteTouchListener;
@@ -27,29 +31,69 @@ import java.util.ArrayList;
 import java.util.Date;
 
 
+
 public class SearchResultsFragment extends Fragment {
 
     private static final String TAG = SearchResultsFragment.class.getSimpleName();
+
+    DataSetObserver mObserver = new DataSetObserver() {
+        @Override
+        public void onChanged() {
+            onArrayChanged();
+        }
+    };
+
     SharedPreferences session;
     SearchResultsView mListView;
     SearchResultsAdapter mAdapter;
+    ScrollView mResultsScrollView;
     ArrayList<Fact> results;
+    private TextView mNoResultTv;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item_list, container, false);
+
         Log.d(TAG, "onCreate() " + view.getClass().getName());
+        mResultsScrollView = (ScrollView) view.findViewById(R.id.search_results_scroll_view);
+        mNoResultTv = (TextView) view.findViewById(R.id.no_results);
         session = getActivity().getSharedPreferences(MainActivity.APP_SESSION, Context.MODE_PRIVATE);
         Context context = view.getContext();
         mListView = (SearchResultsView) view.findViewById(R.id.list);
         results = new ArrayList<>();
-        results.add(new Fact("No search results...", -1));
         mAdapter = new SearchResultsAdapter(context, results);
         mListView.setAdapter(mAdapter);
-
-
+        mAdapter.registerDataSetObserver(mObserver);
         return view;
+    }
+
+    public BaseActivity getBaseActivity() {
+        return (BaseActivity) getActivity();
+    }
+
+    public void onArrayChanged() {
+        final boolean hideResultView = mAdapter.getCount() == 0;
+
+        int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+
+        mResultsScrollView.setVisibility(hideResultView ? View.GONE : View.VISIBLE);
+        mResultsScrollView.animate().setDuration(shortAnimTime).alpha(
+                hideResultView ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mResultsScrollView.setVisibility(hideResultView ? View.GONE : View.VISIBLE);
+            }
+        });
+
+        mNoResultTv.setVisibility(hideResultView ? View.VISIBLE : View.GONE);
+        mNoResultTv.animate().setDuration(shortAnimTime).alpha(
+                hideResultView ? 1 : 0).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mNoResultTv.setVisibility(hideResultView ? View.VISIBLE : View.GONE);
+            }
+        });
     }
 
     public class SearchResultsAdapter extends ArrayAdapter<Fact> {
